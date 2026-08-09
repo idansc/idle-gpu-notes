@@ -105,9 +105,13 @@ the conjunctive structure this benchmark claims, run first this time:
    per-query *linear* operators only (gotchas.md)
 4. **Pareto-flanking count** — golds no linear weighting can rank first (LP
    feasibility, one constraint per distractor) that `min` still ranks first: the
-   operator-free measure of score-level conjunctiveness. Pre-registered
-   prediction: calibrated-min (per-channel affine, then min) beats the best
-   fixed weighted mean iff this count is material. Calibrate the diagnostic on
+   operator-free measure of score-level conjunctiveness. The diagnostic
+   reports TWO counts, because a material flanked count is *necessary* for
+   calibrated-min (per-channel affine, then min) to beat the best fixed
+   weighted mean, not sufficient: min's failure mode is brittleness, tanking
+   golds whose weakest calibrated channel sits within calibration noise of the
+   distractor field. Pre-registered prediction: calibrated-min wins iff
+   flanked-gold gains minus min-vulnerable losses clear zero. Calibrate the diagnostic on
    MultiVENT's tensor first, where it should be ~0.
    Binds on the calibrated-min arm, so the comparison is one-variable: both
    arms score the SAME per-channel affine-calibrated inputs (weighted mean of
