@@ -111,7 +111,14 @@ the conjunctive structure this benchmark claims, run first this time:
    weighted mean, not sufficient: min's failure mode is brittleness, tanking
    golds whose weakest calibrated channel sits within calibration noise of the
    distractor field. Pre-registered prediction: calibrated-min wins iff
-   flanked-gold gains minus min-vulnerable losses clear zero. Calibrate the diagnostic on
+   flanked-gold gains minus min-vulnerable losses clear zero. Calibration run
+   on MultiVENT's tensor (done, CPU): flanked golds are 11.3% (170/1504) — the
+   "~0 expected" guess was wrong — but the instrument is valid (decoy null:
+   0.8% of random non-golds are linearly rankable-first vs 90% of golds), and
+   the NET is what note 04 predicts: min-rescued 8 vs min-vulnerable 503
+   (z-min nDCG@10 = 33.8 vs max 57.4; even on the flanked subset z-min puts
+   4.1% in top-10 vs max's 6.5%). Flanked-but-unrescuable means flanking alone
+   is not conjunctiveness — on FLARE, read only the net. Calibrate the diagnostic on
    MultiVENT's tensor first, where it should be ~0.
    Binds on the calibrated-min arm, so the comparison is one-variable: both
    arms score the SAME per-channel affine-calibrated inputs (weighted mean of
