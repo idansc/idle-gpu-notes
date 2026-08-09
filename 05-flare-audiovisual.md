@@ -108,7 +108,13 @@ the conjunctive structure this benchmark claims, run first this time:
    operator-free measure of score-level conjunctiveness. Pre-registered
    prediction: calibrated-min (per-channel affine, then min) beats the best
    fixed weighted mean iff this count is material. Calibrate the diagnostic on
-   MultiVENT's tensor first, where it should be ~0
+   MultiVENT's tensor first, where it should be ~0.
+   Binds on the calibrated-min arm, so the comparison is one-variable: both
+   arms score the SAME per-channel affine-calibrated inputs (weighted mean of
+   calibrated vs min of calibrated); the calibration is fit on a video-level
+   holdout (split by the 399 source videos, never by clip); and the gap is
+   pre-registered to appear on unified queries only, with vision-only queries
+   as the ~0-gap control
 
 If audio's marginal contribution on unified queries is large, this benchmark can
 support the fusion question and the operator work is justified. If it is ~0.3 like
