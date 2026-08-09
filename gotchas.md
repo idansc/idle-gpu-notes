@@ -79,6 +79,16 @@ corrected_ceiling − acc@64 IS lost − floor, so both print −0.23 by constru
 Worth knowing as its own trap: an identity will happily masquerade as
 corroboration.)
 
+## A no-op edit that still commits
+
+`str.replace` on a missing anchor changes nothing and raises nothing. If the same
+commit touches another file, it succeeds and looks like the fix landed. This is
+how a retraction of a *false published claim* silently failed here for two
+commits — the anchor had been rewritten by a merged PR in between.
+
+Assert the anchor before replacing, and re-grep the file after pushing. The
+failure is invisible in `git log`, which is exactly why it survives.
+
 ## Single-seed results
 
 Seed sd was ~1 point on MMEB VisDial reranking. A first-seed "+2.3 points"

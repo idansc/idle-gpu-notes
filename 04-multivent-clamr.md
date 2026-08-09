@@ -207,12 +207,43 @@ operators:
 | ORACLE per-query channel router | 58.99 |
 | ORACLE per-query weight combiner | 59.12 |
 
-A *perfect* router gains **+1.56**; a perfect combiner **+1.69**. That is the ceiling
-for any per-query routing or weighting of these four scores; per-item
-non-linear reductions (min, product) sit outside that family and are not
-bounded by it — see gotchas.md. Here the distinction is moot: max was swept
-directly (57.43) and the channels are redundant, so the conclusion stands. Note mean and sum
-land *below* max, as on ViDoRe.
+A *perfect* router gains **+1.56**; a 64-sample random-weighting combiner **+1.69**.
+Note mean and sum land *below* max, as on ViDoRe.
+
+> **The +1.69 is NOT the linear ceiling — it measured the sampler.** 64 Dirichlet
+> draws badly under-sample the 4-simplex. Solving the LP exactly (does any
+> `w >= 0` rank the gold above all ~1490 distractors?) gives **89.3% of golds
+> rankable first**, against max's 24.1% R@1. Decoy null at the same cardinality:
+> **1.0%**, an excess of +88.3, so it is not a property of fitting 4 free
+> parameters after choosing what to promote. Independently replicated by a second
+> line: 11.3% flanked, 90.0% vs 0.8% decoy.
+>
+> Two traps inside this diagnostic. Duplicate-of-gold pool rows (median 3/query)
+> have identical channel scores, so `s_gold − s_d` is exactly zero and the strict
+> inequality is unsatisfiable by construction — uncorrected it reads 99.7%
+> flanked with median margin 0.00000. And reproducing the reduction table does
+> **not** catch this, because duplicates only become fatal inside the LP.
+
+**The non-linear escape does not work here either.** `min` is the obvious
+reduction the LP does not bound, and on this tensor it scores **32.74** nDCG@10
+(z-scored 33.76) against max's 57.43. Min-rescued 8 queries versus min-vulnerable
+503; on the flanked subset itself z-min reaches top-10 for 4.1% against max's
+6.5%. So flanked golds are mostly unreachable by min too.
+
+Flanking alone is therefore **not** evidence of conjunctive evidence — the
+load-bearing statistic is *rescued minus vulnerable*, and here it is
+overwhelmingly negative. The redundancy conclusion stands, now for a stated
+reason rather than a mis-measured ceiling.
+
+What survives untouched, because none of it is a searched ceiling: achieved max
+57.43 and mean 51.71, the marginal-contribution result (deleting all frames costs
+0.32), and the anti-complementarity finding (real channels 12.7 points below
+noise-matched copies). Those are realised behaviour.
+
+Still open: the information to rank the gold first *is* present in the four
+channel scores for ~89% of queries. Whether a **learnable** function of the query
+can find that weighting — as opposed to an oracle that sees the answer — is
+untested, and is the live question on MultiVENT.
 
 Striking detail: the oracle would pick video for 783 of 1504 queries where max
 picks it for 38, agreeing only 35.5% of the time — completely different choices,
