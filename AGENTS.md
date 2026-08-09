@@ -42,6 +42,12 @@ work someone already paid for.
 | Query-conditioned aggregation, end-to-end, MMEB VisDial | +0.2 pts, gate active (null) |
 | MMEB-V3 / OmniSET as a multimodal-fusion testbed | Items are single-modality |
 | CLaMR eval on transformers ≥ 4.52 | Loads zero pretrained weights |
+| REINFORCE fine-tune of a top-k-equivalent init (no whitening, no trust region) | −6.0 pts; destroys a good init, holdout does not detect it |
+| Same with whitening + KL trust region + entropy target | Damage stops, no gain; policy barely moves |
+| Conditioning a relevance/diversity mixture on **pool geometry** | Hurts (53.1 vs 54.2 unconditioned) |
+| Conditioning that mixture on the **question** | Keeps single-evidence *and* beats top-k on multi-evidence, but loses the aggregate and ties a 12-line temporal-NMS heuristic; all ns, single seed |
+| On-policy sampling instead of off-policy replay, same objective | Same accuracy at 11× the cost — use replay |
+| Training a selector on data the answerer already solves | 94–98% train accuracy, no gradient; filter to items the baseline gets wrong |
 | CLaMR eval on transformers 4.51.3 + patches | **Reproduces: 57.63 vs 58.47 published** |
 | Learned reduction over MultiVENT's 4 channel scores | Bounded at +1.7 by a perfect oracle |
 | Frame selection on MultiVENT | Deleting ALL frames costs 0.32 — nothing to select |
