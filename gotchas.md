@@ -141,3 +141,28 @@ random 16-frame subsets scored 73.49 against six real methods' 73.76 — the
 headroom was ~98% lottery, and the honest effect was the R=1 gap of ~2 points.
 The failure is silent: the inflated number looks like strong motivation for the
 whole research direction.
+
+## A per-query linear oracle is not a ceiling for per-item non-linear reductions
+
+The complement of the entry above: that one inflates, this one under-bounds.
+An oracle over per-query channel weights (note 04's 59.12) bounds only scoring
+functions *linear* in the channel scores with per-query coefficients. `min` and
+`product` are per-item non-linear — which channel binds varies per item within
+one query's pool — and can legitimately exceed such a "ceiling". A per-item
+oracle is no fix (it degenerately ranks golds first); evaluate fixed non-linear
+operators directly.
+
+The geometry that decides it, in two channels: gold G = (0.6, 0.6) against
+distractors D1 = (0.8, 0.45), D2 = (0.45, 0.8). G beats D1 under weights
+(a, 1-a) only for a < 3/7, and beats D2 only for a > 4/7 — no weighting ranks
+G first; `min` does (0.6 vs 0.45). The binding condition is distractors
+**Pareto-flanking** the gold, not "the query is conjunctive": against the
+textbook AND-failure distractors (1, 0) and (0, 1), any a in (0.4, 0.6) works
+and linear wins fine. Two of our own first constructions fell exactly this way.
+
+So screen for it operator-free: per query, count golds with no feasible linear
+weighting (an LP with one constraint per distractor — works at any channel
+count) that a monotone non-linear reduction still ranks first. Material count:
+weighted means are structurally out and a min-family or learned reduction has
+real room. Count ~0: tune a scalar and stop. Calibrate the diagnostic on
+MultiVENT's dumped tensor first, where redundancy (note 04) predicts ~0.

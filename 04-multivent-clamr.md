@@ -207,8 +207,11 @@ operators:
 | ORACLE per-query channel router | 58.99 |
 | ORACLE per-query weight combiner | 59.12 |
 
-A *perfect* router gains **+1.56**; a perfect combiner **+1.69**. That is the hard
-ceiling for FGA or anything else operating on these four scores. Note mean and sum
+A *perfect* router gains **+1.56**; a perfect combiner **+1.69**. That is the ceiling
+for any per-query routing or weighting of these four scores; per-item
+non-linear reductions (min, product) sit outside that family and are not
+bounded by it — see gotchas.md. Here the distinction is moot: max was swept
+directly (57.43) and the channels are redundant, so the conclusion stands. Note mean and sum
 land *below* max, as on ViDoRe.
 
 Striking detail: the oracle would pick video for 783 of 1504 queries where max
@@ -260,7 +263,8 @@ Before building a fusion operator on any benchmark, spend one eval on:
 
 1. **marginal contribution** — delete each modality, measure the drop
 2. **unique coverage** — queries this channel finds that nothing else does
-3. **oracle router / combiner** — the ceiling for any reduction
+3. **oracle router / combiner** — the ceiling for any per-query linear
+   reduction; per-item non-linear operators need direct evaluation (gotchas.md)
 
 If deleting a modality is nearly free, the modalities are redundant and no
 operator will pay, however well designed. Nobody publishes these numbers, which
