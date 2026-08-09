@@ -186,6 +186,12 @@ G first; `min` does (0.6 vs 0.45). The binding condition is distractors
 textbook AND-failure distractors (1, 0) and (0, 1), any a in (0.4, 0.6) works
 and linear wins fine. Two of our own first constructions fell exactly this way.
 
+A constant-free version of the proof: distractors A = (0.9, 0.1) and
+B = (0.1, 0.9) with gold C = (0.5, 0.5) at their midpoint. Any linear f gives
+f(C) = (f(A) + f(B)) / 2 <= max(f(A), f(B)), so no weighting ranks the bimodal
+doc first — while min does (0.5 vs 0.1). Midpoint golds between specialist
+distractors are invisible to the whole linear family.
+
 So screen for it operator-free: per query, count golds with no feasible linear
 weighting (an LP with one constraint per distractor — works at any channel
 count) that a monotone non-linear reduction still ranks first. Material count:
