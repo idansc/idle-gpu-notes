@@ -19,7 +19,7 @@ they are not results, and are marked as such.**
 Harness check first: uniform sampling at budgets {8,16,32,64} reproduces
 published numbers for this model (58.3 @64 vs 56.0–59.2 reported).
 
-## 1. Candidate density beats every algorithm (significant)
+## 1. Candidate density (a control, not a finding — this is prior art)
 
 Same rule, only the candidate pool changes:
 
@@ -30,12 +30,26 @@ Same rule, only the candidate pool changes:
 | AKS | 53.7 | 56.8 |
 | BOLT | 54.0 | 55.5 |
 
-Top-*k* gains +4.7 overall, +6.0 at one hour, **χ²=11.0 (significant)**, purely
-from a denser shortlist. Uniform is flat, as it must be — that is the control.
-Most published comparisons run at a sparse pool, where the pool and not the
-algorithm is binding.
+Top-*k* gains +4.7 overall, +6.0 at one hour, χ²=11.0, purely from a denser
+shortlist. Uniform is flat, as it must be.
+
+**This is not ours.** Frame-Voyager swept the candidate pool 8→256 on
+Video-MME (47.5→50.8) and reports saturation past 128; ReQuest ablates fps and
+frames it as robustness. ReQuest further shows more frames actively *hurting*
+past 1024. We report it as a control establishing that our pool is not the
+binding constraint, and because the size of the effect relative to every
+algorithmic difference is a caution for anyone comparing selectors at a sparse
+pool — not as a contribution.
 
 ## 2. The ranking inverts with evidence count (the main finding)
+
+Prior work has the *phenomenon*: Adaptive Greedy Frame Selection
+(arXiv:2603.20180) reports that different MLVU task categories prefer
+relevance-heavy or coverage-heavy presets, and ships a question-type router.
+What follows is the *mechanism* — evidence count is the latent variable behind
+that heterogeneity, and unlike a task label it is causal, measurable per item,
+and not tied to one dataset's taxonomy. Their own categories switch preference
+between backbones; evidence count should not.
 
 LVB annotates each question's evidence timestamps. Stratifying by how many:
 
@@ -53,6 +67,11 @@ three independent cuts agree, not from that cell.
 
 45% of long items are single-needle, so aggregates are dominated by the regime
 where concentrating is correct.
+
+The number with no analogue in prior work is that relevance top-*k* falls
+**below uniform** on multi-evidence questions. A per-category router can pick
+the better of two rules; it cannot reveal that the field's default rule is
+worse than no rule at all on 16% of the data.
 
 Headroom: best single method 57.9 · oracle routing over question type 58.9 ·
 **per-item oracle over these six methods 74.0**. A 12-line keyword router
@@ -114,6 +133,24 @@ were still running when this was written.
    and tied.
 5. **Budget in tokens, not frames.** Streams have wildly different prices, and
    the cheapest one bought the only significant gain we found.
+
+## Prior work that overlaps this note
+
+- **Adaptive Greedy Frame Selection** (arXiv:2603.20180): submodular
+  relevance+coverage over a 1 fps pool with a text-only question-type router
+  over four fixed (α,β) presets. Has the heterogeneity phenomenon by MLVU
+  category. No evidence-count stratification, no pool-density study, no code.
+- **ReQuest** (arXiv:2607.01737, ECCV 2026): question-adaptive NMS where the
+  spacing is set by the *answer entropy* of a first uniform pass. Adapts a
+  tradeoff, but on a scalar difficulty signal, with independent per-frame
+  scoring and post-hoc NMS. Their rule concentrates when entropy is high; if
+  multi-evidence questions are the high-entropy ones, §2 predicts it misfires
+  exactly there. We have not tested that yet and flag it as a prediction, not
+  a result.
+- **Frame-Voyager** (arXiv:2410.03226): the candidate-pool sweep in §1.
+- **GenEvA** (arXiv:2607.28516): query-conditioned latent slots appended to a
+  frozen Video-MLLM. Aggregates the *selected* frames; the open question here
+  is the unsampled remainder.
 
 ## Note on other people's methods
 
