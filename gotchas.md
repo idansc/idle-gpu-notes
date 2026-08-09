@@ -66,10 +66,18 @@ four real MultiVENT channels scored **12.7 points below** four noise-matched
 noisy copies of a single channel. Redundancy isn't "they overlap" — it's "they
 share a failure mode".
 
-A good sign the correction is right: on LongVideoBench the `lost` side landed
-*on* the churn floor (−0.23), i.e. more frames cause churn but no systematic
-harm, and the corrected ceiling (54.18) nearly equals uniform@64 (54.41) — the
-identity closing.
+Check the floor's *distribution*, not its mean. On LongVideoBench, across all 56
+ordered pairs of independent 16-frame draws the floor ranges 6.76–9.84 (sd 0.63),
+and against it `recover` = 10.66 is z = +4.0 with **0 of 56** pairs reaching it,
+while `lost` = 7.89 is z = −0.4 with 42 of 56 above it. That separation is the
+evidence.
+
+(An earlier version of this entry cited two "independent" checks — `lost` landing
+on the floor at −0.23, and the corrected ceiling 54.18 closing on uniform@64
+54.41. Those are the *same* check: since acc@64 = acc@16 + recover − lost,
+corrected_ceiling − acc@64 IS lost − floor, so both print −0.23 by construction.
+Worth knowing as its own trap: an identity will happily masquerade as
+corroboration.)
 
 ## Single-seed results
 
