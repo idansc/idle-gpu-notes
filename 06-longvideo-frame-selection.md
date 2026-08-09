@@ -1,11 +1,15 @@
 # 06 — Long-video frame selection: the rule inverts with evidence structure
 
-**Verdict: the learned operator does not beat the hand-designed ones, the
-selection effect over random subsets is about 2 points, and the question
-"which hand-designed one" has no fixed answer.** The best selection
-rule flips depending on how many pieces of evidence a question needs, which is
-why the whole field's gains cluster at 1–2 points. One effect here is
-significant, and it is not about selection at all.
+**Verdict: a perfect budget-16 frame selector on this benchmark is worth about
+2.5 points, so nobody's is going to be worth much more.** Video itself is worth
++16.3 — the channel matters — but the accuracy curve is 94 % saturated by 8
+frames, and once you subtract the rate at which two equally-good runs disagree
+by guessing, the recoverable mass is 2.5 points. Within that budget the learned
+operator does not beat the hand-designed ones, and "which hand-designed one"
+has no fixed answer: the best rule flips depending on how many pieces of
+evidence a question needs. The one significant effect we found is not about
+selection at all — it comes from changing *what occupies* the budget rather
+than which frames fill it.
 
 ## Setup
 
@@ -19,6 +23,59 @@ they are not results, and are marked as such.**
 
 Harness check first: uniform sampling at budgets {8,16,32,64} reproduces
 published numbers for this model (58.3 @64 vs 56.0–59.2 reported).
+
+## 0. How big is the prize? Run this before designing anything
+
+We built the selector first and measured the market afterwards. Do it the other
+way. Two screens, both cheap, both with a **measured** null floor.
+
+**Screen A — is the channel worth anything?** Uniform sampling, budget 0
+(no video at all, text and options only) through 64:
+
+| frames | 0 | 2 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|---|
+| accuracy (long split) | 38.1 | 42.4 | 51.0 | 51.6 | 53.8 | 54.4 |
+
+Video is worth **+16.3**, so the channel is not redundant — note 04 found
++0.32 for the equivalent deletion on MultiVENT, and no selection work should
+be attempted in that regime. But the curve is **94 % saturated by 8 frames**.
+Those two facts are compatible and they are the whole story.
+
+**Screen B — how much can selection recover, after subtracting churn?** The
+tempting quantity is the flip set: items budget 16 gets wrong that budget 64
+gets right. On the long split that is 10.7 % of items, reading as ~10 points of
+headroom against a *single* reference run — no max-over-*R*, which is why we
+believed it after the oracle in note 04 had already been retracted.
+
+It is still wrong. On 4-way multiple choice two runs of **equal strength**
+disagree by P(A wrong, B right) = 0.75 × 0.25 on every item the model is
+guessing. So measure that floor instead of assuming it — eight independent
+random 16-of-64 draws, same items, all 28 pairs:
+
+| | recover | lost |
+|---|---|---|
+| churn floor (16 vs 16, only the frames differ) | 8.12 | 8.12 |
+| 16 → 64 | 10.66 | 7.89 |
+| **excess over churn** | **+2.54** | −0.23 |
+
+**A perfect budget-16 selector tops out at 54.18, against 51.64 for uniform.
+The market is ~2.5 points.** The raw flip set would have said 62.3.
+
+Two checks say the correction is sound rather than convenient. `lost` lands
+*on* the floor (−0.23): extra frames churn but do no systematic harm, which is
+what must hold. And the corrected ceiling, 51.64 + 2.54 = 54.18, closes on
+uniform@64 = 54.41 — an identity we did not fit.
+
+Scope: the ceiling is relative to uniform@64, so a selector *can* exceed it by
+finding frames a 64-frame uniform grid never contains. §1 is exactly that. What
+2.5 points bounds is **reshuffling frames at fixed budget** — which is what
+every method in §2, ours included, does.
+
+This retro-explains the rest of this note. Our learned selector scored 58.26 /
+58.49 / 58.5 against a 58.3 baseline. Those were not estimator failures. The
+market was 2.5 points wide the entire time, and the published literature's
++1–2 (a selection-only ablation of +1.1 in one paper, +2.2 in a 64-pool cell of
+another) is most of it.
 
 ## 1. Candidate density (a control, not a finding — this is prior art)
 
@@ -116,6 +173,12 @@ were still running when this was written.
 
 ## Reusable conclusions
 
+0. **Size the market before you build the operator, and put a measured floor
+   under it.** Two screens, a few GPU-hours: delete the channel entirely, then
+   compute the flip set against a *matched-strength* disagreement floor. We ran
+   both after building the selector and they explain every null result in this
+   note. The floor is not optional — on multiple choice it consumed 8 of the 10
+   points we thought we had.
 1. **Report frame-selection results stratified by evidence count.** An
    aggregate averages two regimes with opposite optima and will show ~1 point
    for almost any method. This is our best guess at why the field's numbers

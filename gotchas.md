@@ -221,3 +221,34 @@ count) that a monotone non-linear reduction still ranks first. Material count:
 weighted means are structurally out and a min-family or learned reduction has
 real room. Count ~0: tune a scalar and stop. Calibrate the diagnostic on
 MultiVENT's dumped tensor first, where redundancy (note 04) predicts ~0.
+
+## Identical numbers across conditions that should differ is a bug, not a finding
+
+A budget sweep at 2 and 4 frames returned running accuracy of 0.5741, 0.5711,
+0.5705 — **the same digits at every checkpoint, in both jobs**. Cause: the eval
+script accepts both `--budget` and `--frames-json`, and the frame file silently
+wins. Both jobs evaluated the same precomputed 16-frame subsets. It also
+filtered the item list to the file's coverage, quietly dropping 361 of 976 items
+and changing the denominator, so even the surviving number answered a different
+question than the one asked.
+
+Nothing crashed and the logs looked healthy. The only signal was the digits
+matching, which is why it is worth stating as a rule: **two conditions that
+should differ and don't have a plumbing bug until proven otherwise.** Diff the
+per-item predictions, not just the summary line.
+
+The fix belongs in the script rather than in your memory — make the overriding
+argument refuse the combination:
+
+```python
+sizes = {len(v["frame_indices"]) for v in frames_map.values()}
+if sizes != {args.budget} and not args.allow_budget_mismatch:
+    raise SystemExit(f"--budget {args.budget} is IGNORED when --frames-json is "
+                     f"given (file holds {sorted(sizes)} frames/item)")
+```
+
+Related, same run: budget 0 (feed no video at all, the channel-deletion screen)
+crashed on every item with `KeyError: 'pixel_values_videos'`. With no video in
+the message the processor emits no video keys, and any bookkeeping that records
+`inputs["pixel_values_videos"].shape` must be guarded. The zero-budget arm of a
+deletion screen is a genuinely different code path from budget 1.
