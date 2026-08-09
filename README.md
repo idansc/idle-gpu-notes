@@ -35,7 +35,7 @@ or signed.**
 | [MMEB VisDial image retrieval](03-mmeb-visdial.md) | redundant | ties exactly (+0.2 pts, gate active) |
 | [MultiVENT 2.0 / CLaMR](04-multivent-clamr.md) | redundant across channels | operator bounded at +1.7 |
 | [FLARE audiovisual](05-flare-audiovisual.md) | **non-redundant by construction** | in progress |
-| [LongVideoBench frame selection](06-longvideo-frame-selection.md) | localized ↔ distributed | ties; but the *hand-designed* winner inverts with evidence count |
+| [LongVideoBench frame selection](06-longvideo-frame-selection.md) | localized ↔ distributed *(does the best operator depend on the item?)* | ties on average; the *hand-designed winner inverts* with evidence count, so conditioning — not capacity — is the open win |
 
 If your evidence is redundant across positions — many patches of a page all
 support the same query — `max` is already near-optimal and no amount of learned
