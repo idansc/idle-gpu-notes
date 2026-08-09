@@ -1,6 +1,7 @@
 # 04 — MultiVENT 2.0 / CLaMR: finding a benchmark with genuinely multimodal items
 
-**Status: reproduction achieved (57.63 vs published 58.47). Operator work next.**
+**Status: reproduced at 57.63 (published 58.47), then abandoned. Every operator
+avenue here is bounded below +2 points, and we can now show that cheaply.**
 
 The post-mortem in Finding 4 is the valuable part — it took six failed runs to
 get there, and every failure was an environment problem that produced a
@@ -188,3 +189,91 @@ having fewer than 10 scene-detected frames.
   memory, but note it deviates from their setup.
 - HF Trainer auto-enables `wandb` if installed and dies at the *logging* step
   after a full eval pass. Pass `--report_to none`.
+
+
+## Finding 6 — why we stopped, and the screen that would have told us sooner
+
+After reproducing, we measured the ceiling *before* building an operator. Three
+diagnostics, all from one eval plus one dump of the per-channel score tensor:
+
+**1. Oracle ceiling on any modality-level reduction.** Same tensor, different
+operators:
+
+| reduction | nDCG@10 |
+|---|---|
+| mean / sum | 51.71 |
+| **max (CLaMR)** | **57.43** |
+| best fixed weights | 56.76 |
+| ORACLE per-query channel router | 58.99 |
+| ORACLE per-query weight combiner | 59.12 |
+
+A *perfect* router gains **+1.56**; a perfect combiner **+1.69**. That is the hard
+ceiling for FGA or anything else operating on these four scores. Note mean and sum
+land *below* max, as on ViDoRe.
+
+Striking detail: the oracle would pick video for 783 of 1504 queries where max
+picks it for 38, agreeing only 35.5% of the time — completely different choices,
+worth 1.6 points. That is what redundancy looks like.
+
+**2. Unique coverage.** For each channel, how many queries does it retrieve
+(gold in top-10) that *no other channel* does:
+
+| channel | covers | unique |
+|---|---|---|
+| description | 85.8% | 6.8% |
+| asr | 73.3% | 1.9% |
+| video | 59.9% | **0.2%** (3 queries) |
+| ocr | 48.1% | **0.1%** (2 queries) |
+| any channel | 89.3% | — |
+
+580 of 1504 queries are covered by all four. Rank correlations are low
+(video↔asr 0.14), so the channels *rank* differently but *cover* the same
+queries — a better operator can reorder, it cannot find anything new.
+
+**3. Marginal contribution of a modality — delete it and re-run.**
+
+| frames per video | nDCG@10 | video-query nDCG@10 |
+|---|---|---|
+| 10 | 57.63 | 47.78 |
+| 5 | 57.40 | 47.50 |
+| 2 | 57.50 | 47.56 |
+| **0** | **57.31** | **47.28** |
+
+**Deleting every frame costs 0.32 points.** 274 tokens per document, 30% of the
+sequence, a full vision transformer — a third of a point.
+
+This does *not* contradict the paper, and reading both together is the real
+result. Their Table 2 shows a vision-only model reaches 40.71, so frames plainly
+carry retrievable signal. Our deletion shows its marginal contribution given text
+is 0.32. **Strong alone, redundant in context.** Neither number alone tells you
+that; you need both.
+
+Consequence: a query-conditioned *frame selector* is pointless here — you cannot
+select your way out of a channel worth 0.32 points. And the 161 queries no
+channel retrieves are **90% video-targeted** while having *longer*-than-average
+descriptions, so they are a visual capability gap that neither better selection
+nor more metadata addresses.
+
+### The screen, for next time
+
+Before building a fusion operator on any benchmark, spend one eval on:
+
+1. **marginal contribution** — delete each modality, measure the drop
+2. **unique coverage** — queries this channel finds that nothing else does
+3. **oracle router / combiner** — the ceiling for any reduction
+
+If deleting a modality is nearly free, the modalities are redundant and no
+operator will pay, however well designed. Nobody publishes these numbers, which
+is why this failure mode keeps costing people weeks. Scripts:
+`reduce_sweep.py`, `complementarity.py` (see the repo issues for copies).
+
+### A correction worth recording
+
+We first compared our separate-encoding run (49.01) against the paper's 44.53 as
+if the paper were off. It is not. Their variant B is **retrained** without
+contextualization (Table 2: "impact of architectural and objective choices");
+ours was the combined-trained checkpoint **evaluated** without it — a train/test
+mismatch. Different quantities: theirs measures how much worse a model trained
+without contextualization is; ours measures how much the trained model depends on
+joint encoding at inference. It is coherent that our mismatched 49.01 sits above
+their retrained 44.53.

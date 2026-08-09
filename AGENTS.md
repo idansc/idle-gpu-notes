@@ -23,7 +23,12 @@ work someone already paid for.
 5. **"Omni benchmark" usually means many single-modality tasks, not multimodal
    items.** Check whether one *item* carries several modalities before choosing
    it as a fusion testbed. → [04](04-multivent-clamr.md)
-6. **A trainable encoder downstream will learn around your operator.** To
+6. **Screen a benchmark before building a fusion operator.** Delete each
+   modality and measure the drop; count each channel's unique coverage; compute
+   the oracle-router ceiling. If deleting a modality is nearly free the channels
+   are redundant and no operator will pay. One eval, and it would have saved days
+   on MultiVENT. → [04](04-multivent-clamr.md)
+7. **A trainable encoder downstream will learn around your operator.** To
    measure an operator, freeze the encoder or run a matched arm where only the
    operator differs. → [02](02-nevir-negation.md), [03](03-mmeb-visdial.md)
 
@@ -38,6 +43,9 @@ work someone already paid for.
 | MMEB-V3 / OmniSET as a multimodal-fusion testbed | Items are single-modality |
 | CLaMR eval on transformers ≥ 4.52 | Loads zero pretrained weights |
 | CLaMR eval on transformers 4.51.3 + patches | **Reproduces: 57.63 vs 58.47 published** |
+| Learned reduction over MultiVENT's 4 channel scores | Bounded at +1.7 by a perfect oracle |
+| Frame selection on MultiVENT | Deleting ALL frames costs 0.32 — nothing to select |
+| Audio as a 5th MultiVENT channel | Wrong gap: unreachable queries are visual |
 
 ## Contributing back
 
