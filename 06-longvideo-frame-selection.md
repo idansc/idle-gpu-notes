@@ -86,11 +86,32 @@ finding frames a 64-frame uniform grid never contains. §1 is exactly that. What
 2.5 points bounds is **reshuffling frames at fixed budget** — which is what
 every method in §2, ours included, does.
 
-This retro-explains the rest of this note. Our learned selector scored 58.26 /
-58.49 / 58.5 against a 58.3 baseline. Those were not estimator failures. The
-market was 2.5 points wide the entire time, and the published literature's
-+1–2 (a selection-only ablation of +1.1 in one paper, +2.2 in a 64-pool cell of
-another) is most of it.
+This resizes the rest of this note. The published literature's +1–2 (a
+selection-only ablation of +1.1 in one paper, +2.2 in a 64-pool cell of
+another) is most of the available market, not a disappointing fraction of it.
+
+It also corrects how we first reported our own rows. We called them null against
+a 58.3 baseline — but 58.3 is uniform at **64** frames, and the paired baseline
+for a budget-16 method is uniform at 16. Redone against the right anchor on the
+long split, with excess taken over the same 8.12 churn floor:
+
+| method @16 | acc | excess over floor | floor pairs ≥ its recover |
+|---|---|---|---|
+| uniform-16 | 51.74 | — | — |
+| k-DPP | 52.77 | +1.00 | 3 / 56 |
+| SigLIP top-16 | 52.97 | +2.33 | 0 / 56 |
+| AKS | 53.69 | +1.51 | 1 / 56 |
+| AdaRD-key | 53.89 | +2.13 | 0 / 56 |
+| BOLT | 54.00 | +1.41 | 1 / 56 |
+| ours (single-seed) | 54.41 | +3.05 | 0 / 56 |
+| *uniform-64, for scale* | *54.41* | *+2.54 = the market* | — |
+
+So these methods are working inside the market rather than failing to find it,
+and at 16 frames several of them reach what uniform needs 64 frames for.
+Paired McNemar on the net is still ns (χ²=3.52, p≈0.06 for our row), and the
+trained row is single-seed. **The accuracy framing is bounded at 2.5 points;
+the efficiency framing — same accuracy at a quarter of the frames — is not, and
+it is the claim this class of method actually supports.**
 
 ## 1. Candidate density (a control, not a finding — this is prior art)
 
@@ -146,9 +167,15 @@ The number with no analogue in prior work is that relevance top-*k* falls
 the better of two rules; it cannot reveal that the field's default rule is
 worse than no rule at all on 16% of the data.
 
-Headroom: best single method 57.9 · oracle routing over question type 58.9 ·
-**per-item oracle over these six methods 74.0**. A 12-line keyword router
-switching between two existing methods scores 58.1, beating every single one.
+Headroom: best single method 57.9 · oracle routing over question type 58.9.
+A 12-line keyword router switching between two existing methods scores 58.1,
+beating every single one.
+
+⛔ An earlier version of this line quoted a **per-item oracle over the six
+methods of 74.0** as the headroom. That number is retracted: six *random*
+subsets reach 73.49 where the six real methods reach 73.76, so it was ~98 %
+chance harvesting. The churn-corrected ceiling in §0 (+2.5) is the number that
+replaces it, and it is much smaller.
 
 ## 3. A cheap index of the *unsampled* video (significant)
 
