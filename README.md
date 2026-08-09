@@ -42,6 +42,35 @@ support the same query — `max` is already near-optimal and no amount of learne
 pooling capacity will help. If your evidence is *signed*, so that some matches
 should **lower** the score, `max` is provably wrong, because it is monotone.
 
+## The screen, and the two-regime result it produced
+
+Two independent lines ran the same diagnostic — **delete a modality and measure
+the drop** — on different benchmarks and different metrics. It separates them
+cleanly at the channel level and *not* at the operator level, and that pair of
+answers is the most useful thing in this repo:
+
+| | delete the visual channel | ceiling for a better operator |
+|---|---|---|
+| MultiVENT (retrieval, nDCG@10) | **+0.32** | +1.56 |
+| LongVideoBench (QA, accuracy) | **+16.3** (38.13 → 54.41) | +2.5 |
+
+So video is nearly worthless to MultiVENT retrieval and clearly essential to
+LongVideoBench QA — the screen is not a machine for saying "no". A plausible
+reading: retrieval can be answered by whatever text co-describes the video
+(metadata, ASR, OCR), while QA has to actually look.
+
+But **both operator ceilings are small**, from opposite metrics. Reshuffling
+frames at a fixed budget is worth ~2.5; reweighting channels is worth ~1.56. If
+you are about to build a smarter reduction, measure its ceiling first — the
+market is usually a couple of points wide, and published gains cluster there for
+a reason.
+
+Caveat carried from [06](06-longvideo-frame-selection.md): the 2.5 bounds
+*recovering what a 64-frame uniform grid already gives you*. A selector can
+exceed it by surfacing frames the uniform grid never contains — a denser
+candidate pool is worth +4.7 — so it bounds reshuffling, not selection in the
+absolute.
+
 ## Files
 
 - **[01-vidore-maxsim.md](01-vidore-maxsim.md)** — learned reductions of the

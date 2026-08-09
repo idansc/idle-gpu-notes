@@ -45,6 +45,32 @@ vector.
 (reference: ~0.35). Always sanity-check that different inputs give different
 embeddings.
 
+## Any max-over-alternatives quantity needs a null at the same cardinality
+
+Found independently by two lines, in two different shapes. Report the quantity
+**minus its null**, never the raw quantity.
+
+**Oracles.** On multiple choice the null harvests the guessing rate: a subset
+oracle over 6 *random* draws reached 73.49 where 6 *real* selection methods
+reached 73.76 — a claimed ~16 points of headroom was almost entirely lottery.
+
+**Flip sets.** Same trap, different shape, and easy to miss because no oracle is
+involved. "Items that budget B gets wrong and budget 64 gets right" looked like
+10 points of headroom on LongVideoBench — but two equal-strength 16-frame runs
+already churn **8.12** points by guessing alone, leaving ~2.5. Measure the churn
+floor with independent draws at the same budget.
+
+**Retrieval.** The guessing floor is usually too small to harvest (top-10 of 1504
+= 0.66%), but the null still earns its keep by exposing error **correlation**:
+four real MultiVENT channels scored **12.7 points below** four noise-matched
+noisy copies of a single channel. Redundancy isn't "they overlap" — it's "they
+share a failure mode".
+
+A good sign the correction is right: on LongVideoBench the `lost` side landed
+*on* the churn floor (−0.23), i.e. more frames cause churn but no systematic
+harm, and the corrected ceiling (54.18) nearly equals uniform@64 (54.41) — the
+identity closing.
+
 ## Single-seed results
 
 Seed sd was ~1 point on MMEB VisDial reranking. A first-seed "+2.3 points"
