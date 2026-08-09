@@ -33,7 +33,8 @@ or signed.**
 | [ViDoRe / ColPali page retrieval](01-vidore-maxsim.md) | redundant | loses badly (81.7 vs 84.96) |
 | [NevIR negation](02-nevir-negation.md) | signed | wins (21.7 → 25.4 frozen, 46.2 trained) |
 | [MMEB VisDial image retrieval](03-mmeb-visdial.md) | redundant | ties exactly (+0.2 pts, gate active) |
-| [MultiVENT 2.0 / CLaMR](04-multivent-clamr.md) | multi-utility | in progress |
+| [MultiVENT 2.0 / CLaMR](04-multivent-clamr.md) | redundant across channels | operator bounded at +1.7 |
+| [FLARE audiovisual](05-flare-audiovisual.md) | **non-redundant by construction** | in progress |
 
 If your evidence is redundant across positions — many patches of a page all
 support the same query — `max` is already near-optimal and no amount of learned
@@ -50,7 +51,11 @@ should **lower** the score, `max` is provably wrong, because it is monotone.
   query-conditioned aggregation on MMEB. Clean null, plus a warning about
   single-seed results.
 - **[04-multivent-clamr.md](04-multivent-clamr.md)** — omni retrieval where one
-  item carries several modalities. Includes a full reproduction post-mortem.
+  item carries several modalities. Full reproduction post-mortem, plus the screen
+  that bounds a fusion operator before you build it.
+- **[05-flare-audiovisual.md](05-flare-audiovisual.md)** — the first benchmark
+  whose queries *require* two modalities, and where the incumbent fusion is a
+  placeholder average that costs some models 7×.
 - **[gotchas.md](gotchas.md)** — environment and library traps that cost hours
   and produce *plausible* wrong numbers rather than crashes. Read this one first
   if you are debugging a reproduction that "runs fine" but misses.
