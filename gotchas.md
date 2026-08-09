@@ -66,28 +66,22 @@ four real MultiVENT channels scored **12.7 points below** four noise-matched
 noisy copies of a single channel. Redundancy isn't "they overlap" — it's "they
 share a failure mode".
 
-Check the floor's *distribution*, not its mean. On LongVideoBench, across all 56
-ordered pairs of independent 16-frame draws the floor ranges 6.76–9.84 (sd 0.63),
-and against it `recover` = 10.66 is z = +4.0 with **0 of 56** pairs reaching it,
-while `lost` = 7.89 is z = −0.4 with 42 of 56 above it. That separation is the
-evidence.
+Check it against the floor's **distribution**, not its mean. On LongVideoBench
+the 56 ordered pairs span 6.76–9.84 (sd 0.63), which puts the observed
+`recover` of 10.66 above every pair including the 9.84 maximum, and the observed
+`lost` of 7.89 below 42 of the 56 — inside the floor, i.e. more frames churn but
+do no systematic harm. Quote **exceedance counts, not z-scores**: 8 runs put
+each run in 14 pairs, so the pairs are dependent and a z overstates.
 
-(An earlier version of this entry cited two "independent" checks — `lost` landing
-on the floor at −0.23, and the corrected ceiling 54.18 closing on uniform@64
-54.41. Those are the *same* check: since acc@64 = acc@16 + recover − lost,
-corrected_ceiling − acc@64 IS lost − floor, so both print −0.23 by construction.
-Worth knowing as its own trap: an identity will happily masquerade as
-corroboration.)
-
-## A no-op edit that still commits
-
-`str.replace` on a missing anchor changes nothing and raises nothing. If the same
-commit touches another file, it succeeds and looks like the fix landed. This is
-how a retraction of a *false published claim* silently failed here for two
-commits — the anchor had been rewritten by a merged PR in between.
-
-Assert the anchor before replacing, and re-grep the file after pushing. The
-failure is invisible in `git log`, which is exactly why it survives.
+⚠️ That `lost` term is the **only** internal check a flip-set correction gives
+you. It is tempting to add "and the corrected ceiling closes on the
+large-budget accuracy", but that is the same check twice: since
+`acc@64 = acc@16 + recover − lost`, the quantity
+`corrected_ceiling − acc@64` equals `lost − floor` identically. Both print
+−0.23 by construction, not by agreement, and reporting the pair as independent
+confirmation overstates the evidence. (We did exactly that for a few hours.)
+For real confirmation, rebuild the floor at a second budget and require the two
+corrections to agree.
 
 ## Single-seed results
 
@@ -185,42 +179,6 @@ random 16-frame subsets scored 73.49 against six real methods' 73.76 — the
 headroom was ~98% lottery, and the honest effect was the R=1 gap of ~2 points.
 The failure is silent: the inflated number looks like strong motivation for the
 whole research direction.
-
-## A per-query linear oracle is not a ceiling for per-item non-linear reductions
-
-The complement of the entry above: that one inflates, this one under-bounds.
-An oracle over per-query channel weights (note 04's 59.12) bounds only scoring
-functions *linear* in the channel scores with per-query coefficients. `min` is
-per-item non-additive — which channel binds varies per item within one query's
-pool — and can legitimately exceed such a "ceiling". `product` also escapes the
-raw-score linear family, but only trivially: on positive scores it is additive
-in logs, so a weighted mean over log-calibrated channels reaches it — a product
-win is a calibration result, not an operator result. The operator claim rides
-on `min`, which has no additive decomposition under any per-channel monotone
-transform (its level sets have corners; additive families' do not). A per-item
-oracle is no fix (it degenerately ranks golds first); evaluate fixed non-linear
-operators directly.
-
-The geometry that decides it, in two channels: gold G = (0.6, 0.6) against
-distractors D1 = (0.8, 0.45), D2 = (0.45, 0.8). G beats D1 under weights
-(a, 1-a) only for a < 3/7, and beats D2 only for a > 4/7 — no weighting ranks
-G first; `min` does (0.6 vs 0.45). The binding condition is distractors
-**Pareto-flanking** the gold, not "the query is conjunctive": against the
-textbook AND-failure distractors (1, 0) and (0, 1), any a in (0.4, 0.6) works
-and linear wins fine. Two of our own first constructions fell exactly this way.
-
-A constant-free version of the proof: distractors A = (0.9, 0.1) and
-B = (0.1, 0.9) with gold C = (0.5, 0.5) at their midpoint. Any linear f gives
-f(C) = (f(A) + f(B)) / 2 <= max(f(A), f(B)), so no weighting ranks the bimodal
-doc first — while min does (0.5 vs 0.1). Midpoint golds between specialist
-distractors are invisible to the whole linear family.
-
-So screen for it operator-free: per query, count golds with no feasible linear
-weighting (an LP with one constraint per distractor — works at any channel
-count) that a monotone non-linear reduction still ranks first. Material count:
-weighted means are structurally out and a min-family or learned reduction has
-real room. Count ~0: tune a scalar and stop. Calibrate the diagnostic on
-MultiVENT's dumped tensor first, where redundancy (note 04) predicts ~0.
 
 ## Identical numbers across conditions that should differ is a bug, not a finding
 
