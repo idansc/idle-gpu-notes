@@ -6,9 +6,17 @@ returned numbers a reasonable person would believe.
 ## Silently randomly-initialized weights
 
 `transformers` 4.52 renamed Qwen2.5-VL's submodule path
-(`model.layers.*` → `model.language_model.layers.*`). Any subclass that bypasses
-the rename mapping loads **zero** pretrained weights, prints a warning, and
-carries on.
+(`model.layers.*` → `model.language_model.layers.*`). Any **subclass** that
+bypasses the rename mapping loads **zero** pretrained weights, prints a warning,
+and carries on.
+
+**Narrowed by a second data point (thanks to the frame-selection line): the
+hazard is SUBCLASSING, not the version.** Using
+`Qwen2_5_VLForConditionalGeneration` directly on transformers 4.57.6 is fine —
+they reproduce published LongVideoBench numbers (58.3 @64 frames), which is
+impossible with random weights. So do **not** pin 4.51.3 reflexively; pin only if
+you are loading through a subclass that reimplements `forward` (CLaMR's
+`ColQwen2_5` does). The general check below is what matters, not the version.
 
 Result was nDCG@10 0.2244 instead of 0.5847 — low, but not obviously broken,
 because identical tokens still get identical *random* embeddings, so
@@ -67,6 +75,20 @@ gradient. Add a learnable logit scale (CLIP-style, init ~20).
 `hf_hub_download(cache_dir=...)` returns a symlink into a blob store; unlinking
 the returned path frees nothing. Use `local_dir=<tempdir>` and `rmtree` it if you
 are streaming hundreds of shards through a shared volume.
+
+## qwen-vl-utils video min_pixels floor
+
+Independently hit by two projects, so worth the exact numbers. In
+qwen-vl-utils 0.0.14, `VIDEO_MIN_TOKEN_NUM = 128`, so the per-frame floor is
+`128 × 28 × 28 = 100,352` px. If you pass only `max_pixels` (e.g. `224*224 =
+50,176` for small frames, or `3136` for 4-token thumbnails), `max < min` and
+`smart_resize` raises `AssertionError: The max_pixels of image must be greater
+than or equal to min_pixels` on **every** item.
+
+The error text does not say which minimum it means. Fix: set **both** in the same
+element dict — `{"min_pixels": 784, "max_pixels": 3136}` yields a real ~3-token
+frame. And note there are two call sites in CLaMR (`process_combined` and
+`process_frames`); patching one is not enough.
 
 ## Trainer side effects
 
