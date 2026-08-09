@@ -65,6 +65,12 @@ construction and a flat sweep tells you nothing about the world. Use a zero-gate
 Zero-initializing both the gate and the residual's output layer gives both zero
 gradient forever. Zero exactly one side.
 
+A second form: a zero-init *projection* does not deadlock, it silently starves
+everything upstream. Our aggregation head showed the projection taking 100% of
+the gradient share and the attention machinery feeding it exactly 0% — it would
+have trained the projection over a frozen random head and produced a plausible
+mediocre number. Check gradient *shares*, not gradient existence.
+
 ## Contrastive loss saturating on cosines
 
 Cosine similarities in [-1, 1] make cross-entropy saturate at ≈ ln(N) with no
@@ -94,3 +100,44 @@ frame. And note there are two call sites in CLaMR (`process_combined` and
 
 HF `Trainer` auto-enables `wandb` when it is installed, and can fail at the
 *logging* callback after a complete, expensive eval pass. `--report_to none`.
+
+## Masking with `-inf` turns a KL term into NaN once batches are ragged
+
+`p · (log p − log q)` with padding masked as `-inf` evaluates
+`exp(-inf) · (-inf − finite)` = `0 · -inf` = NaN, which then poisons every
+downstream gate. Invisible with fixed-size inputs, because nothing is ever
+padded; fires on almost every step once elements have different lengths. Mask
+with a large **finite** value and zero the padded terms before summing. Add a
+regression test on a deliberately ragged batch — a smoke test at fixed size
+cannot see this class of bug.
+
+## Feature caches keyed on the wrong id
+
+Check `len(unique ids) == len(items)` before trusting one. A popular
+video-instruction set keys its annotations on *video* id, not item id: 31,008
+questions collapsed onto 7,774 feature files, later questions silently
+overwriting earlier ones, and a reward cache keyed on that id mixed rewards
+across different questions of the same video. Training then runs happily on
+inputs conditioned by the wrong question.
+
+## A selection experiment must change *which* items are fed, never *how*
+
+Feeding chosen video frames as a pre-decoded image list double-resizes them
+relative to the library's own file-reading path: 94% prediction agreement with
+the baseline instead of ~99% — a few points of apparent "method effect" that is
+really preprocessing. Patch the reader to honour explicit indices *inside* the
+normal path, and verify agreement on a slice before running anything.
+
+## A subset oracle on multiple choice harvests chance
+
+`oracle@R = max over R candidate subsets of per-item correctness` gives every
+wrong item R independent ~25% lottery tickets, and the inflation grows with R —
+it is far larger than the 25% floor and subtracting an analytic chance term does
+not remove it. The control is a **null oracle**: max over R *random* subsets at
+the same R. Report `oracle − null_oracle`.
+
+We claimed ~16 points of selection headroom this way. With the control, six
+random 16-frame subsets scored 73.49 against six real methods' 73.76 — the
+headroom was ~98% lottery, and the honest effect was the R=1 gap of ~2 points.
+The failure is silent: the inflated number looks like strong motivation for the
+whole research direction.
