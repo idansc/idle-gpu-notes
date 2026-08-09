@@ -1,6 +1,10 @@
 # 04 — MultiVENT 2.0 / CLaMR: finding a benchmark with genuinely multimodal items
 
-**Status: in progress. Reproduction post-mortem below is already useful.**
+**Status: reproduction achieved (57.63 vs published 58.47). Operator work next.**
+
+The post-mortem in Finding 4 is the valuable part — it took six failed runs to
+get there, and every failure was an environment problem that produced a
+plausible number rather than a crash.
 
 ## The question that led here
 
@@ -110,12 +114,56 @@ Two diagnostics that pinned it, both cheap and worth copying:
 2. **Diff the checkpoint's key names against the model's `state_dict` keys.**
    165 keys starting `model.layers.` in the file; zero in the model.
 
-Fix in progress: pin `transformers==4.51.3` (pre-rename).
+Fixed by pinning `transformers==4.51.3` (pre-rename). After the pin, the only
+`newly initialized` weights are `custom_text_proj.{weight,bias}` — the projection
+head, which legitimately has none and is what the LoRA adapts.
 
 > **Generalizable rule: always grep the model-loading warnings for "newly
 > initialized" before trusting any reproduction number.** A silently
 > randomly-initialized backbone yields numbers that look like a weak baseline
 > rather than an error.
+
+## Finding 5 — the reproduction, and what it took
+
+| | reproduced here | CLaMR published |
+|---|---|---|
+| **nDCG@10** | **57.63** | **58.47** |
+| R@1 | 25.47 | 26.7 |
+| R@5 | 84.11 | 85.1 |
+| R@10 | 87.37 | 88.0 |
+
+Every metric lands ~1% low by the same margin, which suggests one small
+systematic difference rather than a bug. Known deviations, any of which could
+account for it: eval data rebuilt from raw shards (their Drive is 404), bf16
+instead of their 4-bit quantization, and an explicit `min_pixels` (see below)
+that may change frame resolution slightly.
+
+Per-channel, which is the interesting part:
+
+| channel | nDCG@10 |
+|---|---|
+| description | 65.13 |
+| asr | 62.68 |
+| ocr | 61.60 |
+| **video** | **47.78** |
+
+The visual utility is by far the weakest — consistent with 140 of 414 videos
+having fewer than 10 scene-detected frames.
+
+**Exact recipe that works** (as of 2026-08):
+
+- `transformers==4.51.3`, `peft==0.15.2` — 4.52+ silently loads zero weights
+- make the `qwen2_5_omni` import in `src/models/__init__.py` optional; it only
+  exists in transformers >= 4.52, so the two constraints conflict as published
+- add `"min_pixels": 4*28*28` next to `"max_pixels": 224*224` in **both**
+  `process_combined` and `process_frames` — qwen-vl-utils >= 0.0.13 defaults the
+  video minimum *above* their max, tripping `smart_resize`
+- add an `image_token_id` setter to `ColQwen2_5Processor` (newer transformers
+  assigns it in the parent `__init__` against their read-only property)
+- drop `--quantize_4bit` unless you pin old bitsandbytes, and pass
+  `--report_to none`
+- `--per_device_eval_batch_size 1`: a third of videos have <10 frames and the
+  batch collate stacks per-example video tensors
 
 ## Other things that cost time here
 

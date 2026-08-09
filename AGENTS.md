@@ -37,6 +37,7 @@ work someone already paid for.
 | Query-conditioned aggregation, end-to-end, MMEB VisDial | +0.2 pts, gate active (null) |
 | MMEB-V3 / OmniSET as a multimodal-fusion testbed | Items are single-modality |
 | CLaMR eval on transformers ≥ 4.52 | Loads zero pretrained weights |
+| CLaMR eval on transformers 4.51.3 + patches | **Reproduces: 57.63 vs 58.47 published** |
 
 ## Contributing back
 
