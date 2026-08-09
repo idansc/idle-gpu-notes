@@ -96,12 +96,19 @@ would let us claim credit for a scalar.
 
 ## The screen, before building anything
 
-Same three diagnostics that would have saved us on MultiVENT, run first this time:
+The three diagnostics that would have saved us on MultiVENT, plus a fourth for
+the conjunctive structure this benchmark claims, run first this time:
 
 1. **marginal contribution** — delete a modality, measure the drop
 2. **unique coverage** — queries this channel retrieves that nothing else does
-3. **oracle ceiling** — per query, the best channel or weighting; the bound on any
-   operator
+3. **oracle ceiling** — per query, the best channel or weighting; the bound on
+   per-query *linear* operators only (gotchas.md)
+4. **Pareto-flanking count** — golds no linear weighting can rank first (LP
+   feasibility, one constraint per distractor) that `min` still ranks first: the
+   operator-free measure of score-level conjunctiveness. Pre-registered
+   prediction: calibrated-min (per-channel affine, then min) beats the best
+   fixed weighted mean iff this count is material. Calibrate the diagnostic on
+   MultiVENT's tensor first, where it should be ~0
 
 If audio's marginal contribution on unified queries is large, this benchmark can
 support the fusion question and the operator work is justified. If it is ~0.3 like
