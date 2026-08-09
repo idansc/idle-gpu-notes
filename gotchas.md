@@ -68,9 +68,10 @@ share a failure mode".
 
 Check it against the floor's **distribution**, not its mean. On LongVideoBench
 the 56 ordered pairs span 6.76–9.84 (sd 0.63), which puts the observed
-`recover` of 10.66 at z = +4.0 with 0 of 56 pairs reaching it, and the observed
-`lost` of 7.89 at z = −0.4, inside the floor — more frames churn but do no
-systematic harm.
+`recover` of 10.66 above every pair including the 9.84 maximum, and the observed
+`lost` of 7.89 below 42 of the 56 — inside the floor, i.e. more frames churn but
+do no systematic harm. Quote **exceedance counts, not z-scores**: 8 runs put
+each run in 14 pairs, so the pairs are dependent and a z overstates.
 
 ⚠️ That `lost` term is the **only** internal check a flip-set correction gives
 you. It is tempting to add "and the corrected ceiling closes on the

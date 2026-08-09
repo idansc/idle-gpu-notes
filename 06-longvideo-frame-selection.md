@@ -64,11 +64,14 @@ The market is ~2.5 points.** The raw flip set would have said 62.3.
 Use the floor's **distribution**, not just its mean. Across the 56 ordered
 pairs the floor spans 6.76–9.84 with sd 0.63, which places the observed numbers:
 
-- `recover` 10.66 → **z = +4.0, and 0 of 56 pairs reach it.** The excess is not
-  something reshuffling frames produces.
-- `lost` 7.89 → z = −0.4, with 42 of 56 pairs above it. Squarely inside the
-  floor, i.e. more frames churn but do no systematic harm — which is what must
-  hold if the correction is right.
+- `recover` 10.66 → **no pair reaches it, including the maximum of 9.84.** The
+  excess is not something reshuffling frames produces.
+- `lost` 7.89 → 42 of 56 pairs sit above it. Squarely inside the floor, i.e.
+  more frames churn but do no systematic harm — which is what must hold if the
+  correction is right.
+
+Report these as **exceedance counts, not z-scores**: the 8 runs put each run in
+14 pairs, so the 56 are dependent and their sd understates the spread.
 
 ⚠️ That `lost` check is the **only** internal one available, and we first wrote
 this up claiming two. "The corrected ceiling closes on uniform@64" is *not*
