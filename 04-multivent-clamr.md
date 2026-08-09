@@ -240,10 +240,30 @@ What survives untouched, because none of it is a searched ceiling: achieved max
 0.32), and the anti-complementarity finding (real channels 12.7 points below
 noise-matched copies). Those are realised behaviour.
 
-Still open: the information to rank the gold first *is* present in the four
-channel scores for ~89% of queries. Whether a **learnable** function of the query
-can find that weighting — as opposed to an oracle that sees the answer — is
-untested, and is the live question on MultiVENT.
+**And now closed.** The information to rank the gold first *is* present in the
+four channel scores for ~89% of queries — but a learnable function of the query
+does not find it. Fitting a weighting on the query embeddings (linear head,
+listwise CE, video-disjoint 5-fold CV):
+
+| | nDCG@10 |
+|---|---|
+| max | **57.43** |
+| learned fixed `w` | 56.50 |
+| learned `w(q)` | 56.23 |
+
+Both learned reductions land *below* max, and conditioning on the query buys
+nothing over a fixed weight. So the 89.3% LP reachability is **oracle geometry**
+— `w` fitted after seeing which document is gold — not query-decodable signal.
+Same shape as the VisDial null in [03](03-mmeb-visdial.md), where a gate that was
+active still bought +0.2.
+
+Caveats, stated because they bound the claim: single seed, linear probe,
+post-norm features. A non-linear head or pre-norm features could differ, and the
+pre-norm rerun is queued. Read it as "null at probe level", not "impossible".
+
+The lesson generalises past this benchmark: **an oracle ceiling and a learnable
+ceiling are different quantities, and the gap between them can be the whole
+result.** 89.3% reachable, 0% recovered.
 
 Striking detail: the oracle would pick video for 783 of 1504 queries where max
 picks it for 38, agreeing only 35.5% of the time — completely different choices,
