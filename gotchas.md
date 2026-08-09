@@ -127,3 +127,17 @@ relative to the library's own file-reading path: 94% prediction agreement with
 the baseline instead of ~99% — a few points of apparent "method effect" that is
 really preprocessing. Patch the reader to honour explicit indices *inside* the
 normal path, and verify agreement on a slice before running anything.
+
+## A subset oracle on multiple choice harvests chance
+
+`oracle@R = max over R candidate subsets of per-item correctness` gives every
+wrong item R independent ~25% lottery tickets, and the inflation grows with R —
+it is far larger than the 25% floor and subtracting an analytic chance term does
+not remove it. The control is a **null oracle**: max over R *random* subsets at
+the same R. Report `oracle − null_oracle`.
+
+We claimed ~16 points of selection headroom this way. With the control, six
+random 16-frame subsets scored 73.49 against six real methods' 73.76 — the
+headroom was ~98% lottery, and the honest effect was the R=1 gap of ~2 points.
+The failure is silent: the inflated number looks like strong motivation for the
+whole research direction.

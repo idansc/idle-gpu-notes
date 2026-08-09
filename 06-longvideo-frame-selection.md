@@ -1,7 +1,8 @@
 # 06 — Long-video frame selection: the rule inverts with evidence structure
 
-**Verdict: the learned operator does not beat the hand-designed ones — but the
-question "which hand-designed one" has no fixed answer.** The best selection
+**Verdict: the learned operator does not beat the hand-designed ones, the
+selection effect over random subsets is about 2 points, and the question
+"which hand-designed one" has no fixed answer.** The best selection
 rule flips depending on how many pieces of evidence a question needs, which is
 why the whole field's gains cluster at 1–2 points. One effect here is
 significant, and it is not about selection at all.
