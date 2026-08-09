@@ -51,7 +51,7 @@ answers is the most useful thing in this repo:
 
 | | delete the visual channel | ceiling for a better operator |
 |---|---|---|
-| MultiVENT (retrieval, nDCG@10) | **+0.32** | +1.56 |
+| MultiVENT (retrieval, nDCG@10) | **+0.32** | +1.56 sampled / **89.3% LP** (see 04) |
 | LongVideoBench (QA, accuracy) | **+16.3** (38.13 → 54.41) | +2.5 |
 
 So video is nearly worthless to MultiVENT retrieval and clearly essential to
