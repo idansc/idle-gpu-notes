@@ -111,15 +111,6 @@ with a large **finite** value and zero the padded terms before summing. Add a
 regression test on a deliberately ragged batch — a smoke test at fixed size
 cannot see this class of bug.
 
-## qwen-vl-utils video `min_pixels` floor
-
-`VIDEO_MIN_TOKEN_NUM = 128` (0.0.14), so the per-frame floor is
-128×28×28 = 100,352 px. Passing only `max_pixels` — e.g. 3136, aiming at
-4-token thumbnails — makes max < min and every item raises
-`AssertionError: The max_pixels of image must be greater than or equal to
-min_pixels`, which does not say *which* minimum it means. Override both in the
-same element dict: `{"min_pixels": 784, "max_pixels": 3136}`.
-
 ## Feature caches keyed on the wrong id
 
 Check `len(unique ids) == len(items)` before trusting one. A popular
