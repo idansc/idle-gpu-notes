@@ -61,10 +61,22 @@ random 16-of-64 draws, same items, all 28 pairs:
 **A perfect budget-16 selector tops out at 54.18, against 51.64 for uniform.
 The market is ~2.5 points.** The raw flip set would have said 62.3.
 
-Two checks say the correction is sound rather than convenient. `lost` lands
-*on* the floor (−0.23): extra frames churn but do no systematic harm, which is
-what must hold. And the corrected ceiling, 51.64 + 2.54 = 54.18, closes on
-uniform@64 = 54.41 — an identity we did not fit.
+Use the floor's **distribution**, not just its mean. Across the 56 ordered
+pairs the floor spans 6.76–9.84 with sd 0.63, which places the observed numbers:
+
+- `recover` 10.66 → **z = +4.0, and 0 of 56 pairs reach it.** The excess is not
+  something reshuffling frames produces.
+- `lost` 7.89 → z = −0.4, with 42 of 56 pairs above it. Squarely inside the
+  floor, i.e. more frames churn but do no systematic harm — which is what must
+  hold if the correction is right.
+
+⚠️ That `lost` check is the **only** internal one available, and we first wrote
+this up claiming two. "The corrected ceiling closes on uniform@64" is *not*
+independent: since accuracy@64 = accuracy@16 + recover − lost, the gap
+`corrected_ceiling − accuracy@64` equals `lost − floor` identically. Both read
+−0.23 by construction, not by agreement. For genuinely independent
+confirmation, repeat the whole construction at another budget (a 32-vs-32 floor
+against 32→64 flips) and require the two to agree.
 
 Scope: the ceiling is relative to uniform@64, so a selector *can* exceed it by
 finding frames a 64-frame uniform grid never contains. §1 is exactly that. What
