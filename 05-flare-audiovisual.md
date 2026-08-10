@@ -118,8 +118,7 @@ the conjunctive structure this benchmark claims, run first this time:
    the NET is what note 04 predicts: min-rescued 8 vs min-vulnerable 503
    (z-min nDCG@10 = 33.8 vs max 57.4; even on the flanked subset z-min puts
    4.1% in top-10 vs max's 6.5%). Flanked-but-unrescuable means flanking alone
-   is not conjunctiveness — on FLARE, read only the net. Calibrate the diagnostic on
-   MultiVENT's tensor first, where it should be ~0.
+   is not conjunctiveness — on FLARE, read only the net.
    Binds on the calibrated-min arm, so the comparison is one-variable: both
    arms score the SAME per-channel affine-calibrated inputs (weighted mean of
    calibrated vs min of calibrated); the calibration is fit on a video-level
