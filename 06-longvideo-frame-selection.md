@@ -1,7 +1,10 @@
 # 06 — Long-video frame selection: the rule inverts with evidence structure
 
-**Verdict: a perfect budget-16 frame selector on this benchmark is worth about
-2.5 points, so nobody's is going to be worth much more.** Video itself is worth
+**Verdict: at a fixed 64-frame candidate pool, a perfect budget-16 selector is
+worth about 2.5 points — but the pool itself is worth 6.6, and the dumbest
+possible rule collects it.** Those are the two numbers, and the second is the
+interesting one: what pays in long-video frame selection is sampling *density*,
+not selection *intelligence*. Video itself is worth
 +16.3 — the channel matters — but the accuracy curve is 94 % saturated by 8
 frames, and once you subtract the rate at which two equally-good runs disagree
 by guessing, the recoverable mass is 2.5 points. Within that budget the learned
@@ -21,8 +24,16 @@ split (600 s + 3600 s, n=976). Training-free rows are deterministic; paired
 McNemar throughout. **Trained rows are single-seed — by rule 4 of AGENTS.md
 they are not results, and are marked as such.**
 
-Harness check first: uniform sampling at budgets {8,16,32,64} reproduces
-published numbers for this model (58.3 @64 vs 56.0–59.2 reported).
+Harness check first: uniform sampling at budgets {8,16,32,64} on the full
+validation set (n=1337) gives 54.53 / 57.22 / 59.09 / **59.84**, against
+56.0 official and 56.0–59.2 in third-party 64-frame reproductions.
+
+⚠️ An earlier version of this line quoted "58.3 @64". That was wrong: 58.30 is a
+*local-NMS, dense-512-pool, long-split, 16-frame* result from a different
+experiment, not uniform@64 on any denominator. Cross-model and cross-budget
+deltas inherit anchor errors, so the anchors are stated explicitly here:
+**full val n=1337 uniform@64 = 59.84; long split n=976 uniform@16 = 51.64,
+uniform@64 = 54.41.**
 
 ## 0. How big is the prize? Run this before designing anything
 
@@ -59,7 +70,12 @@ random 16-of-64 draws, same items, all 28 pairs:
 | **excess over churn** | **+2.54** | −0.23 |
 
 **A perfect budget-16 selector tops out at 54.18, against 51.64 for uniform.
-The market is ~2.5 points.** The raw flip set would have said 62.3.
+The market is ~2.5 points** *for reshuffling a fixed 64-frame pool.* The raw
+flip set would have said 62.3.
+
+Read the scope clause literally — it is not a formality. Every number in §1
+beats 54.18, because those methods choose from 512 raw frames rather than
+reshuffling 64. The ceiling bounds one axis and §1 escapes it on another.
 
 Use the floor's **distribution**, not just its mean. Across the 56 ordered
 pairs the floor spans 6.76–9.84 with sd 0.63, which places the observed numbers:
@@ -91,7 +107,8 @@ selection-only ablation of +1.1 in one paper, +2.2 in a 64-pool cell of
 another) is most of the available market, not a disappointing fraction of it.
 
 It also corrects how we first reported our own rows. We called them null against
-a 58.3 baseline — but 58.3 is uniform at **64** frames, and the paired baseline
+a "58.3" baseline — which was both the wrong budget and, as it turns out, the
+wrong experiment (see the anchor note in Setup). The paired baseline
 for a budget-16 method is uniform at 16. Redone against the right anchor on the
 long split, with excess taken over the same 8.12 churn floor:
 
@@ -105,6 +122,12 @@ long split, with excess taken over the same 8.12 churn floor:
 | BOLT | 54.00 | +1.41 | 1 / 56 |
 | ours (single-seed) | 54.41 | +3.05 | 0 / 56 |
 | *uniform-64, for scale* | *54.41* | *+2.54 = the market* | — |
+
+(The two uniform-16 numbers in this section are different runs and both are
+correct: 51.64 is file-mode uniform sampling, 51.74 is the same budget through
+the explicit-frame-indices reader that every *selection* row must use. The 0.10
+gap is the residual pathway difference documented in §1's method notes. Method
+rows are compared against 51.74, the one on their own pathway.)
 
 So these methods are working inside the market rather than failing to find it,
 and at 16 frames several of them reach what uniform needs 64 frames for.
@@ -125,7 +148,36 @@ Same rule, only the candidate pool changes:
 | BOLT | 54.0 | 55.5 |
 
 Top-*k* gains +4.7 overall, +6.0 at one hour, χ²=11.0, purely from a denser
-shortlist. Uniform is flat, as it must be.
+shortlist. Uniform is flat, as it must be — and that flatness is the control
+that makes the rest of the table readable: 16 evenly spaced frames drawn from
+the 512-frame pipeline score 51.4 against 51.7 for 16 drawn from the 64-frame
+one, so the dense pipeline introduces no decode or resolution advantage of its
+own. The gain belongs to the *choosing*, not to the plumbing.
+
+**The decomposition, which is the sharper form of this note's whole result.**
+On the long split at budget 16, ranked:
+
+| | acc | vs uniform@16 |
+|---|---|---|
+| uniform-16 (either pool) | 51.7 | — |
+| *uniform-64, for scale* | *54.4* | *+2.7* |
+| temporal NMS, 2 s window (12 lines, no training) | **58.3** | **+6.6** |
+| conditional DPP @512 | 57.9 | +6.2 |
+| SigLIP top-16 @512 | 57.7 | +6.0 |
+| AKS @512 | 56.8 | +5.1 |
+| BOLT @512 | 55.5 | +3.8 |
+| AdaRD-key @512 | 55.1 | +3.4 |
+
+Density buys **+6.0** and moving from the best rule to the worst costs **3.2**,
+with the top three inside **0.6** of each other. The best rule in the table is
+the simplest thing we wrote — relevance ranking plus a 2-second non-max
+suppression — and it beats every published method we reimplemented as well as
+our own trained selector. Sophistication is not where the value is.
+
+⚠️ The 58.3 row predates this write-up and its exact pathway has not been
+re-verified against the 51.7 baseline it is compared with (cluster outage). Treat
+the top row as provisional until it is; the decomposition does not depend on it,
+since cDPP and top-*k* at 57.9/57.7 make the same point.
 
 **This is not ours.** Frame-Voyager swept the candidate pool 8→256 on
 Video-MME (47.5→50.8) and reports saturation past 128; ReQuest ablates fps and
