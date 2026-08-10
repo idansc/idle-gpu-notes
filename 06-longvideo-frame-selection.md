@@ -1,11 +1,15 @@
 # 06 — Long-video frame selection: the rule inverts with evidence structure
 
-**Verdict: the learned operator does not beat the hand-designed ones, the
-selection effect over random subsets is about 2 points, and the question
-"which hand-designed one" has no fixed answer.** The best selection
-rule flips depending on how many pieces of evidence a question needs, which is
-why the whole field's gains cluster at 1–2 points. One effect here is
-significant, and it is not about selection at all.
+**Verdict: a perfect budget-16 frame selector on this benchmark is worth about
+2.5 points, so nobody's is going to be worth much more.** Video itself is worth
++16.3 — the channel matters — but the accuracy curve is 94 % saturated by 8
+frames, and once you subtract the rate at which two equally-good runs disagree
+by guessing, the recoverable mass is 2.5 points. Within that budget the learned
+operator does not beat the hand-designed ones, and "which hand-designed one"
+has no fixed answer: the best rule flips depending on how many pieces of
+evidence a question needs. The one significant effect we found is not about
+selection at all — it comes from changing *what occupies* the budget rather
+than which frames fill it.
 
 ## Setup
 
@@ -19,6 +23,95 @@ they are not results, and are marked as such.**
 
 Harness check first: uniform sampling at budgets {8,16,32,64} reproduces
 published numbers for this model (58.3 @64 vs 56.0–59.2 reported).
+
+## 0. How big is the prize? Run this before designing anything
+
+We built the selector first and measured the market afterwards. Do it the other
+way. Two screens, both cheap, both with a **measured** null floor.
+
+**Screen A — is the channel worth anything?** Uniform sampling, budget 0
+(no video at all, text and options only) through 64:
+
+| frames | 0 | 2 | 8 | 16 | 32 | 64 |
+|---|---|---|---|---|---|---|
+| accuracy (long split) | 38.1 | 42.4 | 51.0 | 51.6 | 53.8 | 54.4 |
+
+Video is worth **+16.3**, so the channel is not redundant — note 04 found
++0.32 for the equivalent deletion on MultiVENT, and no selection work should
+be attempted in that regime. But the curve is **94 % saturated by 8 frames**.
+Those two facts are compatible and they are the whole story.
+
+**Screen B — how much can selection recover, after subtracting churn?** The
+tempting quantity is the flip set: items budget 16 gets wrong that budget 64
+gets right. On the long split that is 10.7 % of items, reading as ~10 points of
+headroom against a *single* reference run — no max-over-*R*, which is why we
+believed it after the oracle in note 04 had already been retracted.
+
+It is still wrong. On 4-way multiple choice two runs of **equal strength**
+disagree by P(A wrong, B right) = 0.75 × 0.25 on every item the model is
+guessing. So measure that floor instead of assuming it — eight independent
+random 16-of-64 draws, same items, all 28 pairs:
+
+| | recover | lost |
+|---|---|---|
+| churn floor (16 vs 16, only the frames differ) | 8.12 | 8.12 |
+| 16 → 64 | 10.66 | 7.89 |
+| **excess over churn** | **+2.54** | −0.23 |
+
+**A perfect budget-16 selector tops out at 54.18, against 51.64 for uniform.
+The market is ~2.5 points.** The raw flip set would have said 62.3.
+
+Use the floor's **distribution**, not just its mean. Across the 56 ordered
+pairs the floor spans 6.76–9.84 with sd 0.63, which places the observed numbers:
+
+- `recover` 10.66 → **no pair reaches it, including the maximum of 9.84.** The
+  excess is not something reshuffling frames produces.
+- `lost` 7.89 → 42 of 56 pairs sit above it. Squarely inside the floor, i.e.
+  more frames churn but do no systematic harm — which is what must hold if the
+  correction is right.
+
+Report these as **exceedance counts, not z-scores**: the 8 runs put each run in
+14 pairs, so the 56 are dependent and their sd understates the spread.
+
+⚠️ That `lost` check is the **only** internal one available, and we first wrote
+this up claiming two. "The corrected ceiling closes on uniform@64" is *not*
+independent: since accuracy@64 = accuracy@16 + recover − lost, the gap
+`corrected_ceiling − accuracy@64` equals `lost − floor` identically. Both read
+−0.23 by construction, not by agreement. For genuinely independent
+confirmation, repeat the whole construction at another budget (a 32-vs-32 floor
+against 32→64 flips) and require the two to agree.
+
+Scope: the ceiling is relative to uniform@64, so a selector *can* exceed it by
+finding frames a 64-frame uniform grid never contains. §1 is exactly that. What
+2.5 points bounds is **reshuffling frames at fixed budget** — which is what
+every method in §2, ours included, does.
+
+This resizes the rest of this note. The published literature's +1–2 (a
+selection-only ablation of +1.1 in one paper, +2.2 in a 64-pool cell of
+another) is most of the available market, not a disappointing fraction of it.
+
+It also corrects how we first reported our own rows. We called them null against
+a 58.3 baseline — but 58.3 is uniform at **64** frames, and the paired baseline
+for a budget-16 method is uniform at 16. Redone against the right anchor on the
+long split, with excess taken over the same 8.12 churn floor:
+
+| method @16 | acc | excess over floor | floor pairs ≥ its recover |
+|---|---|---|---|
+| uniform-16 | 51.74 | — | — |
+| k-DPP | 52.77 | +1.00 | 3 / 56 |
+| SigLIP top-16 | 52.97 | +2.33 | 0 / 56 |
+| AKS | 53.69 | +1.51 | 1 / 56 |
+| AdaRD-key | 53.89 | +2.13 | 0 / 56 |
+| BOLT | 54.00 | +1.41 | 1 / 56 |
+| ours (single-seed) | 54.41 | +3.05 | 0 / 56 |
+| *uniform-64, for scale* | *54.41* | *+2.54 = the market* | — |
+
+So these methods are working inside the market rather than failing to find it,
+and at 16 frames several of them reach what uniform needs 64 frames for.
+Paired McNemar on the net is still ns (χ²=3.52, p≈0.06 for our row), and the
+trained row is single-seed. **The accuracy framing is bounded at 2.5 points;
+the efficiency framing — same accuracy at a quarter of the frames — is not, and
+it is the claim this class of method actually supports.**
 
 ## 1. Candidate density (a control, not a finding — this is prior art)
 
@@ -74,9 +167,15 @@ The number with no analogue in prior work is that relevance top-*k* falls
 the better of two rules; it cannot reveal that the field's default rule is
 worse than no rule at all on 16% of the data.
 
-Headroom: best single method 57.9 · oracle routing over question type 58.9 ·
-**per-item oracle over these six methods 74.0**. A 12-line keyword router
-switching between two existing methods scores 58.1, beating every single one.
+Headroom: best single method 57.9 · oracle routing over question type 58.9.
+A 12-line keyword router switching between two existing methods scores 58.1,
+beating every single one.
+
+⛔ An earlier version of this line quoted a **per-item oracle over the six
+methods of 74.0** as the headroom. That number is retracted: six *random*
+subsets reach 73.49 where the six real methods reach 73.76, so it was ~98 %
+chance harvesting. The churn-corrected ceiling in §0 (+2.5) is the number that
+replaces it, and it is much smaller.
 
 ## 3. A cheap index of the *unsampled* video (significant)
 
@@ -116,6 +215,12 @@ were still running when this was written.
 
 ## Reusable conclusions
 
+0. **Size the market before you build the operator, and put a measured floor
+   under it.** Two screens, a few GPU-hours: delete the channel entirely, then
+   compute the flip set against a *matched-strength* disagreement floor. We ran
+   both after building the selector and they explain every null result in this
+   note. The floor is not optional — on multiple choice it consumed 8 of the 10
+   points we thought we had.
 1. **Report frame-selection results stratified by evidence count.** An
    aggregate averages two regimes with opposite optima and will show ~1 point
    for almost any method. This is our best guess at why the field's numbers
