@@ -115,6 +115,12 @@ long split, with excess taken over the same 8.12 churn floor:
 | ours (single-seed) | 54.41 | +3.05 | 0 / 56 |
 | *uniform-64, for scale* | *54.41* | *+2.54 = the market* | — |
 
+(The two uniform-16 numbers in this section are different runs and both are
+correct: 51.64 is file-mode uniform sampling, 51.74 is the same budget through
+the explicit-frame-indices reader that every *selection* row must use. The 0.10
+gap is the residual pathway difference documented in §1's method notes. Method
+rows are compared against 51.74, the one on their own pathway.)
+
 So these methods are working inside the market rather than failing to find it,
 and at 16 frames several of them reach what uniform needs 64 frames for.
 Paired McNemar on the net is still ns (χ²=3.52, p≈0.06 for our row), and the
