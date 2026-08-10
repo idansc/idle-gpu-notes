@@ -210,3 +210,30 @@ crashed on every item with `KeyError: 'pixel_values_videos'`. With no video in
 the message the processor emits no video keys, and any bookkeeping that records
 `inputs["pixel_values_videos"].shape` must be guarded. The zero-budget arm of a
 deletion screen is a genuinely different code path from budget 1.
+
+## A hand-rolled nDCG on MultiVENT reads +28 — the docs are duplicated, the metric decides the ties
+
+Computing nDCG@10 on the CLaMR score matrices with `rank = 1 + (scores > gold).sum()`
+gives **85.63** where the official eval prints **57.63**. Same tensor, same
+diagonal-gold targets. The strict-greater rank hands the gold every tie it is
+involved in — and on MultiVENT 2.0 the ties are not numerical noise: **1495 of
+1504 queries have exact cross-doc ties at the gold score, up to 10-way**,
+because duplicate channel text across docs (same event → same description/OCR)
+produces identical per-channel MaxSim sums. torchmetrics sorts the gold behind
+its ties instead: 57.67 on the same matrix. The union/all-token scorer that
+looked +28 above the channel-max oracle collapses to 57.54 under the official
+metric — that whole "finding" was tie handling.
+
+Two discrepancies stack on these matrices (found independently in reduce_sweep):
+tie policy (optimistic vs sorted, ~+28) and a residual ~0.2 between a stable
+descending argsort (57.43) and torchmetrics (57.63) — candidates are sort-order
+of ties vs binary/graded labels; unresolved, so do not chase 0.2-level deltas
+across implementations. `compute_metrics` builds BINARY diagonal targets, so the
+official 57.63 is not graded relevance.
+
+Rules: report ONLY torchmetrics `RetrievalNormalizedDCG(top_k=10)` with
+compute_metrics' binary diagonal targets on this benchmark; keep any fast
+optimistic ranker out of reportable paths (rename it `_UNREPORTABLE`); and the
+same duplicated pool makes LP flanking counts unsatisfiable by construction
+(gold−distractor margins exactly 0.0), so screen diagnostics must dedup or
+margin-epsilon first.
