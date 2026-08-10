@@ -32,7 +32,9 @@ work someone already paid for.
    measure an operator, freeze the encoder or run a matched arm where only the
    operator differs. → [02](02-nevir-negation.md), [03](03-mmeb-visdial.md)
 8. **Oracle screens are family-relative, in both directions.** A per-query
-   linear oracle does not bound per-item non-linear reductions (min, product) —
+   linear oracle does not bound per-item non-additive reductions (min — but
+   NOT product, which is a weighted mean in log space and stays inside the
+   family under per-channel monotone calibration) —
    count Pareto-flanked golds by LP feasibility before trusting a "ceiling";
    and a max-over-R subset oracle on multiple choice harvests chance — control
    with a null oracle over random subsets. → [gotchas.md](gotchas.md)
