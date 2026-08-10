@@ -190,9 +190,14 @@ whole research direction.
 
 The complement of the entry above: that one inflates, this one under-bounds.
 An oracle over per-query channel weights (note 04's 59.12) bounds only scoring
-functions *linear* in the channel scores with per-query coefficients. `min` and
-`product` are per-item non-linear — which channel binds varies per item within
-one query's pool — and can legitimately exceed such a "ceiling". A per-item
+functions *linear* in the channel scores with per-query coefficients. `min` is
+per-item non-additive — which channel binds varies per item within one query's
+pool — and can legitimately exceed such a "ceiling". `product` also escapes the
+raw-score linear family, but only trivially: on positive scores it is additive
+in logs, so a weighted mean over log-calibrated channels reaches it — a product
+win is a calibration result, not an operator result. The operator claim rides
+on `min`, which has no additive decomposition under any per-channel monotone
+transform (its level sets have corners; additive families' do not). A per-item
 oracle is no fix (it degenerately ranks golds first); evaluate fixed non-linear
 operators directly.
 
@@ -203,6 +208,12 @@ G first; `min` does (0.6 vs 0.45). The binding condition is distractors
 **Pareto-flanking** the gold, not "the query is conjunctive": against the
 textbook AND-failure distractors (1, 0) and (0, 1), any a in (0.4, 0.6) works
 and linear wins fine. Two of our own first constructions fell exactly this way.
+
+A constant-free version of the proof: distractors A = (0.9, 0.1) and
+B = (0.1, 0.9) with gold C = (0.5, 0.5) at their midpoint. Any linear f gives
+f(C) = (f(A) + f(B)) / 2 <= max(f(A), f(B)), so no weighting ranks the bimodal
+doc first — while min does (0.5 vs 0.1). Midpoint golds between specialist
+distractors are invisible to the whole linear family.
 
 So screen for it operator-free: per query, count golds with no feasible linear
 weighting (an LP with one constraint per distractor — works at any channel

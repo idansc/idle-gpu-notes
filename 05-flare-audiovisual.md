@@ -105,10 +105,26 @@ the conjunctive structure this benchmark claims, run first this time:
    per-query *linear* operators only (gotchas.md)
 4. **Pareto-flanking count** — golds no linear weighting can rank first (LP
    feasibility, one constraint per distractor) that `min` still ranks first: the
-   operator-free measure of score-level conjunctiveness. Pre-registered
-   prediction: calibrated-min (per-channel affine, then min) beats the best
-   fixed weighted mean iff this count is material. Calibrate the diagnostic on
-   MultiVENT's tensor first, where it should be ~0
+   operator-free measure of score-level conjunctiveness. The diagnostic
+   reports TWO counts, because a material flanked count is *necessary* for
+   calibrated-min (per-channel affine, then min) to beat the best fixed
+   weighted mean, not sufficient: min's failure mode is brittleness, tanking
+   golds whose weakest calibrated channel sits within calibration noise of the
+   distractor field. Pre-registered prediction: calibrated-min wins iff
+   flanked-gold gains minus min-vulnerable losses clear zero. Calibration run
+   on MultiVENT's tensor (done, CPU): flanked golds are 11.3% (170/1504) — the
+   "~0 expected" guess was wrong — but the instrument is valid (decoy null:
+   0.8% of random non-golds are linearly rankable-first vs 90% of golds), and
+   the NET is what note 04 predicts: min-rescued 8 vs min-vulnerable 503
+   (z-min nDCG@10 = 33.8 vs max 57.4; even on the flanked subset z-min puts
+   4.1% in top-10 vs max's 6.5%). Flanked-but-unrescuable means flanking alone
+   is not conjunctiveness — on FLARE, read only the net.
+   Binds on the calibrated-min arm, so the comparison is one-variable: both
+   arms score the SAME per-channel affine-calibrated inputs (weighted mean of
+   calibrated vs min of calibrated); the calibration is fit on a video-level
+   holdout (split by the 399 source videos, never by clip); and the gap is
+   pre-registered to appear on unified queries only, with vision-only queries
+   as the ~0-gap control
 
 If audio's marginal contribution on unified queries is large, this benchmark can
 support the fusion question and the operator work is justified. If it is ~0.3 like
