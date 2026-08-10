@@ -1,7 +1,10 @@
 # 06 — Long-video frame selection: the rule inverts with evidence structure
 
-**Verdict: a perfect budget-16 frame selector on this benchmark is worth about
-2.5 points, so nobody's is going to be worth much more.** Video itself is worth
+**Verdict: at a fixed 64-frame candidate pool, a perfect budget-16 selector is
+worth about 2.5 points — but the pool itself is worth 6.6, and the dumbest
+possible rule collects it.** Those are the two numbers, and the second is the
+interesting one: what pays in long-video frame selection is sampling *density*,
+not selection *intelligence*. Video itself is worth
 +16.3 — the channel matters — but the accuracy curve is 94 % saturated by 8
 frames, and once you subtract the rate at which two equally-good runs disagree
 by guessing, the recoverable mass is 2.5 points. Within that budget the learned
@@ -67,7 +70,12 @@ random 16-of-64 draws, same items, all 28 pairs:
 | **excess over churn** | **+2.54** | −0.23 |
 
 **A perfect budget-16 selector tops out at 54.18, against 51.64 for uniform.
-The market is ~2.5 points.** The raw flip set would have said 62.3.
+The market is ~2.5 points** *for reshuffling a fixed 64-frame pool.* The raw
+flip set would have said 62.3.
+
+Read the scope clause literally — it is not a formality. Every number in §1
+beats 54.18, because those methods choose from 512 raw frames rather than
+reshuffling 64. The ceiling bounds one axis and §1 escapes it on another.
 
 Use the floor's **distribution**, not just its mean. Across the 56 ordered
 pairs the floor spans 6.76–9.84 with sd 0.63, which places the observed numbers:
@@ -140,7 +148,36 @@ Same rule, only the candidate pool changes:
 | BOLT | 54.0 | 55.5 |
 
 Top-*k* gains +4.7 overall, +6.0 at one hour, χ²=11.0, purely from a denser
-shortlist. Uniform is flat, as it must be.
+shortlist. Uniform is flat, as it must be — and that flatness is the control
+that makes the rest of the table readable: 16 evenly spaced frames drawn from
+the 512-frame pipeline score 51.4 against 51.7 for 16 drawn from the 64-frame
+one, so the dense pipeline introduces no decode or resolution advantage of its
+own. The gain belongs to the *choosing*, not to the plumbing.
+
+**The decomposition, which is the sharper form of this note's whole result.**
+On the long split at budget 16, ranked:
+
+| | acc | vs uniform@16 |
+|---|---|---|
+| uniform-16 (either pool) | 51.7 | — |
+| *uniform-64, for scale* | *54.4* | *+2.7* |
+| temporal NMS, 2 s window (12 lines, no training) | **58.3** | **+6.6** |
+| conditional DPP @512 | 57.9 | +6.2 |
+| SigLIP top-16 @512 | 57.7 | +6.0 |
+| AKS @512 | 56.8 | +5.1 |
+| BOLT @512 | 55.5 | +3.8 |
+| AdaRD-key @512 | 55.1 | +3.4 |
+
+Density buys **+6.0** and moving from the best rule to the worst costs **3.2**,
+with the top three inside **0.6** of each other. The best rule in the table is
+the simplest thing we wrote — relevance ranking plus a 2-second non-max
+suppression — and it beats every published method we reimplemented as well as
+our own trained selector. Sophistication is not where the value is.
+
+⚠️ The 58.3 row predates this write-up and its exact pathway has not been
+re-verified against the 51.7 baseline it is compared with (cluster outage). Treat
+the top row as provisional until it is; the decomposition does not depend on it,
+since cDPP and top-*k* at 57.9/57.7 make the same point.
 
 **This is not ours.** Frame-Voyager swept the candidate pool 8→256 on
 Video-MME (47.5→50.8) and reports saturation past 128; ReQuest ablates fps and
