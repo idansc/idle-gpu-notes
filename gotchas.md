@@ -13,7 +13,7 @@ and carries on.
 **Narrowed by a second data point (thanks to the frame-selection line): the
 hazard is SUBCLASSING, not the version.** Using
 `Qwen2_5_VLForConditionalGeneration` directly on transformers 4.57.6 is fine —
-they reproduce published LongVideoBench numbers (58.3 @64 frames), which is
+they reproduce published LongVideoBench numbers (59.84 @64 frames, n=1337), which is
 impossible with random weights. So do **not** pin 4.51.3 reflexively; pin only if
 you are loading through a subclass that reimplements `forward` (CLaMR's
 `ColQwen2_5` does). The general check below is what matters, not the version.
