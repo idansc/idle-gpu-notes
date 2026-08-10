@@ -49,12 +49,15 @@ Readings, in order of reusability:
 4. Pooling perturbs the tie structure (see gotchas): K=64 beating full by +0.27
    is within tie-reshuffle noise until a paired test says otherwise.
 
-Not controlled: single k-means seed (index-time seed sensitivity untested —
-the 56.19→57.01 non-monotonicity between across-K32 and K16 sets the wiggle
-scale at ~0.8), no query-side compression, tokens are jointly contextualized
+Seed sensitivity, measured (3 k-means seeds at fixed K, within-channel):
+K=8 = 54.13/53.45/53.47 (mean 53.68, spread 0.68) and K=16 = 55.20/55.30/54.89
+(mean 55.13, spread 0.41) — index-time noise ≈ ±0.3, well under the 2.5–3.5
+headroom targets; use the means as the contested-regime baselines. Still not
+controlled: no query-side compression, tokens are jointly contextualized
 (per-channel structure is diluted by 28 joint layers; tokens_separate exists
 for the clean-substrate version), K=1 not run (within-channel needs K ≥ 4).
 
 Reusable conclusion: on MultiVENT/CLaMR, run operator experiments at K=8 and
-K=16 against within-channel cluster-mean (54.13 / 55.20), report torchmetrics
-only, and treat sub-point deltas as tie noise until paired.
+K=16 against within-channel cluster-mean (53.68 / 55.13, 3-seed means), report
+torchmetrics only, and treat sub-±0.3 deltas as index-seed noise and sub-point
+deltas as tie noise until paired.
