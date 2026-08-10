@@ -2,7 +2,7 @@
 
 **Verdict: CLaMR's document token set compresses 14× for free (k-means-mean,
 K=64: 57.94 vs full 57.67), and the contested regime for any learned pooling
-operator is K ∈ {8, 16}, where cluster-mean loses 2.5–3.5 points but random
+operator is K ∈ {8, 16}, where cluster-mean loses 2.5–4.0 points (3-seed means) but random
 selection collapses.** One seed, one GPU-hour, no training — this is the screen
 that gates operator work, not a result about operators.
 
@@ -31,8 +31,8 @@ Readings, in order of reusability:
    ViDoRe-style token pooling (Clavié 2409.14683). MultiVENT docs are extremely
    redundant.
 2. **Structure exists and hand-designed pooling captures only part of it**: at
-   K=8, full−kmeans = 3.5 while kmeans−random = 12.4. A learned operator has a
-   measured 3.5-point headroom TARGET over cluster-mean at K=8 (2.5 at K=16) —
+   K=8, full−kmeans = 4.0 (3-seed mean) while kmeans−random = 12.4. A learned operator has a
+   measured 4.0-point headroom target over cluster-mean at K=8 (2.5 at K=16; 3-seed means 53.68/55.13 vs full 57.67) —
    a target, not a bound: renormalized pooling can exceed full-token scores,
    as the K=64 row does (+0.27); K=4 vs
    K=8 differ by 4.2, so the token sets are not unimodal (the kill condition
@@ -51,7 +51,7 @@ Readings, in order of reusability:
 
 Seed sensitivity, measured (3 k-means seeds at fixed K, within-channel):
 K=8 = 54.13/53.45/53.47 (mean 53.68, spread 0.68) and K=16 = 55.20/55.30/54.89
-(mean 55.13, spread 0.41) — index-time noise ≈ ±0.3, well under the 2.5–3.5
+(mean 55.13, spread 0.41) — index-time noise ≈ ±0.3, well under the 2.5–4.0
 headroom targets; use the means as the contested-regime baselines. Still not
 controlled: no query-side compression, tokens are jointly contextualized
 (per-channel structure is diluted by 28 joint layers; tokens_separate exists
