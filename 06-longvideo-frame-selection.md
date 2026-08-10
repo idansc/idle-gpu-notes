@@ -21,8 +21,16 @@ split (600 s + 3600 s, n=976). Training-free rows are deterministic; paired
 McNemar throughout. **Trained rows are single-seed — by rule 4 of AGENTS.md
 they are not results, and are marked as such.**
 
-Harness check first: uniform sampling at budgets {8,16,32,64} reproduces
-published numbers for this model (58.3 @64 vs 56.0–59.2 reported).
+Harness check first: uniform sampling at budgets {8,16,32,64} on the full
+validation set (n=1337) gives 54.53 / 57.22 / 59.09 / **59.84**, against
+56.0 official and 56.0–59.2 in third-party 64-frame reproductions.
+
+⚠️ An earlier version of this line quoted "58.3 @64". That was wrong: 58.30 is a
+*local-NMS, dense-512-pool, long-split, 16-frame* result from a different
+experiment, not uniform@64 on any denominator. Cross-model and cross-budget
+deltas inherit anchor errors, so the anchors are stated explicitly here:
+**full val n=1337 uniform@64 = 59.84; long split n=976 uniform@16 = 51.64,
+uniform@64 = 54.41.**
 
 ## 0. How big is the prize? Run this before designing anything
 
@@ -91,7 +99,8 @@ selection-only ablation of +1.1 in one paper, +2.2 in a 64-pool cell of
 another) is most of the available market, not a disappointing fraction of it.
 
 It also corrects how we first reported our own rows. We called them null against
-a 58.3 baseline — but 58.3 is uniform at **64** frames, and the paired baseline
+a "58.3" baseline — which was both the wrong budget and, as it turns out, the
+wrong experiment (see the anchor note in Setup). The paired baseline
 for a budget-16 method is uniform at 16. Redone against the right anchor on the
 long split, with excess taken over the same 8.12 churn floor:
 
