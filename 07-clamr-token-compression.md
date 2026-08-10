@@ -32,15 +32,20 @@ Readings, in order of reusability:
    redundant.
 2. **Structure exists and hand-designed pooling captures only part of it**: at
    K=8, full−kmeans = 3.5 while kmeans−random = 12.4. A learned operator has a
-   measured 3.5-point ceiling against cluster-mean at K=8 (2.5 at K=16); K=4 vs
+   measured 3.5-point headroom TARGET over cluster-mean at K=8 (2.5 at K=16) —
+   a target, not a bound: renormalized pooling can exceed full-token scores,
+   as the K=64 row does (+0.27); K=4 vs
    K=8 differ by 4.2, so the token sets are not unimodal (the kill condition
    for aggregation research fails to fire — the line proceeds).
 3. **Modes do not align with channel boundaries at aggressive K**: across-channel
    pooling beats within-channel at every K ≤ 16 (57.01 vs 55.20 at K=16, 54.92
    vs 54.13 at K=8, 52.83 vs 49.90 at K=4) despite the within arm using the
-   official scorer. Confound: the across arm necessarily uses the union scorer,
-   so protocol and pooling freedom change together — but the direction says
-   one-summary-per-modality designs are the wrong prior at small K.
+   official scorer. The scorer main effect is measured at
+   full tokens: union 57.54 vs official 57.67 (−0.13) — tiny and the wrong sign
+   to explain across−within (+1.8/+0.8/+2.9 at K=16/8/4), so pooling freedom,
+   not the scorer, drives it (the full-K scorer effect need not transfer
+   exactly to pooled K, but it bounds the first-order term).
+   One-summary-per-modality is the wrong prior at small K.
 4. Pooling perturbs the tie structure (see gotchas): K=64 beating full by +0.27
    is within tie-reshuffle noise until a paired test says otherwise.
 

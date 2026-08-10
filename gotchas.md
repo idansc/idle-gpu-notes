@@ -236,4 +236,7 @@ compute_metrics' binary diagonal targets on this benchmark; keep any fast
 optimistic ranker out of reportable paths (rename it `_UNREPORTABLE`); and the
 same duplicated pool makes LP flanking counts unsatisfiable by construction
 (gold−distractor margins exactly 0.0), so screen diagnostics must dedup or
-margin-epsilon first.
+margin-epsilon first. Note 04's pool audit already measured the cause from the
+data side — a median of 3 exact duplicates of the gold per query pool: exact
+duplicates ⇒ identical channel maxes ⇒ exact ties at gold. One cause, two
+symptoms (04's LP degeneracy; the 1495/1504 tie rate here).
