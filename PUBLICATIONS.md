@@ -15,8 +15,9 @@ Assembly drafts live in `papers/`.
 **What we found:** for 9 of 10 MultiVENT queries, SOME weighting of the four
 channel scores would rank the right video first (89.3%, vs 0.8% for a random
 decoy) — but a model trained to produce that weighting from the query alone
-gains nothing (56.23 vs plain max 57.43). The headroom is real geometry and
-absent information.
+gains nothing at probe level (56.23 vs plain max 57.43; single seed, linear
+probe, post-norm features — pre-norm rerun queued). The headroom is real
+geometry and, at least at probe level, absent information.
 
 **Why it matters:** oracle and upper-bound gaps are standard motivation in
 selection/fusion work — Frame-Voyager builds its training signal from
@@ -30,9 +31,13 @@ unreachable in principle from the query side, and we ship the one-eval test
 ### 2. Frame selection is worth ~2.5 points, not the ~10 it appears
 
 **What we found:** on 4-option MCQ, two equal-quality runs already disagree on
-~8% of items by chance (churn floor 8.12); the raw flip-set reads 10.7 points
-but the churn-corrected market for choosing WHICH 16 frames a frozen model sees
-is 2.5 ± 1 on LongVideoBench ([2407.15754](https://arxiv.org/abs/2407.15754)).
+~8% of items by chance (churn floor 8.12 on Qwen2.5-VL-7B); the raw flip-set
+reads 10.7 points but the churn-corrected market for choosing WHICH 16 frames
+that frozen model sees is 2.5 ± 1 on LongVideoBench
+([2407.15754](https://arxiv.org/abs/2407.15754)). The market is
+CHECKPOINT-DEPENDENT: on Qwen3-VL-8B the b16→b64 market doubles to 5.33 —
+Qwen2.5-VL was saturated, not the task — and Qwen3-VL's own churn floor is not
+yet measured (recompute pending), so floors may not transfer either.
 
 **Why it matters:** the frame-selection literature's typical claimed deltas are
 1–2 points against uniform or CLIP top-k — AKS
@@ -43,7 +48,10 @@ is 2.5 ± 1 on LongVideoBench ([2407.15754](https://arxiv.org/abs/2407.15754)).
 ([2510.27280](https://arxiv.org/abs/2510.27280)), AGFS
 ([2603.20180](https://arxiv.org/abs/2603.20180)), ReQuest
 ([2607.01737](https://arxiv.org/abs/2607.01737)) — i.e., inside or near the
-noise floor we measure, and none report a paired null of this kind. Precedent
+noise floor we measure on the anchor where the floor exists — AND the market
+itself is checkpoint-dependent, so single-generation selection results do not
+transfer. Two axes, one audit. None of the cited papers report a paired null
+of this kind. Precedent
 for the audit-paper shape in another domain: "A Sober Look at Progress in
 Language Model Reasoning" ([2504.07086](https://arxiv.org/abs/2504.07086)).
 (Note 06.)
@@ -54,7 +62,12 @@ Language Model Reasoning" ([2504.07086](https://arxiv.org/abs/2504.07086)).
 [2502.21271](https://arxiv.org/abs/2502.21271) and Q-Frame
 [2506.22139](https://arxiv.org/abs/2506.22139)) beats uniform spacing by 8
 points on questions needing ONE moment and falls BELOW uniform on questions
-needing ≥3 — and benchmark averages cancel the two regimes.
+needing ≥3 — and benchmark averages cancel the two regimes. Power scoping,
+per the ledger's own rule: the below-uniform multi-evidence cell is n=160
+where within-cell significance would need n≈17,818, so the inversion is
+supported at the pattern-across-three-independent-cuts level, never within a
+cell; and it is measured on Qwen2.5-VL only — the Qwen3-VL transfer rerun is
+in flight, and this entry is conditional on it.
 
 **Why it matters:** leaderboard averages cannot distinguish a better method
 from a luckier mix of question types; the stratifying variable (evidence count)
