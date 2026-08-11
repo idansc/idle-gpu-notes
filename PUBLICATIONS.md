@@ -15,8 +15,9 @@ Assembly drafts live in `papers/`.
 **What we found:** for 9 of 10 MultiVENT queries, SOME weighting of the four
 channel scores would rank the right video first (89.3%, vs 0.8% for a random
 decoy) — but a model trained to produce that weighting from the query alone
-gains nothing (56.23 vs plain max 57.43). The headroom is real geometry and
-absent information.
+gains nothing at probe level (56.23 vs plain max 57.43; single seed, linear
+probe, post-norm features — pre-norm rerun queued). The headroom is real
+geometry and, at least at probe level, absent information.
 
 **Why it matters:** oracle and upper-bound gaps are standard motivation in
 selection/fusion work — Frame-Voyager builds its training signal from
@@ -30,9 +31,13 @@ unreachable in principle from the query side, and we ship the one-eval test
 ### 2. Frame selection is worth ~2.5 points, not the ~10 it appears
 
 **What we found:** on 4-option MCQ, two equal-quality runs already disagree on
-~8% of items by chance (churn floor 8.12); the raw flip-set reads 10.7 points
-but the churn-corrected market for choosing WHICH 16 frames a frozen model sees
-is 2.5 ± 1 on LongVideoBench ([2407.15754](https://arxiv.org/abs/2407.15754)).
+~8% of items by chance (churn floor 8.12 on Qwen2.5-VL-7B); the raw flip-set
+reads 10.7 points but the churn-corrected market for choosing WHICH 16 frames
+that frozen model sees is 2.5 ± 1 on LongVideoBench
+([2407.15754](https://arxiv.org/abs/2407.15754)). The market is
+CHECKPOINT-DEPENDENT: on Qwen3-VL-8B the b16→b64 market doubles to 5.33 —
+Qwen2.5-VL was saturated, not the task — and Qwen3-VL's own churn floor is not
+yet measured (recompute pending), so floors may not transfer either.
 
 **Why it matters:** the frame-selection literature's typical claimed deltas are
 1–2 points against uniform or CLIP top-k — AKS
@@ -43,7 +48,10 @@ is 2.5 ± 1 on LongVideoBench ([2407.15754](https://arxiv.org/abs/2407.15754)).
 ([2510.27280](https://arxiv.org/abs/2510.27280)), AGFS
 ([2603.20180](https://arxiv.org/abs/2603.20180)), ReQuest
 ([2607.01737](https://arxiv.org/abs/2607.01737)) — i.e., inside or near the
-noise floor we measure, and none report a paired null of this kind. Precedent
+noise floor we measure on the anchor where the floor exists — AND the market
+itself is checkpoint-dependent, so single-generation selection results do not
+transfer. Two axes, one audit. None of the cited papers report a paired null
+of this kind. Precedent
 for the audit-paper shape in another domain: "A Sober Look at Progress in
 Language Model Reasoning" ([2504.07086](https://arxiv.org/abs/2504.07086)).
 (Note 06.)
@@ -54,7 +62,12 @@ Language Model Reasoning" ([2504.07086](https://arxiv.org/abs/2504.07086)).
 [2502.21271](https://arxiv.org/abs/2502.21271) and Q-Frame
 [2506.22139](https://arxiv.org/abs/2506.22139)) beats uniform spacing by 8
 points on questions needing ONE moment and falls BELOW uniform on questions
-needing ≥3 — and benchmark averages cancel the two regimes.
+needing ≥3 — and benchmark averages cancel the two regimes. Power scoping,
+per the ledger's own rule: the below-uniform multi-evidence cell is n=160
+where within-cell significance would need n≈17,818, so the inversion is
+supported at the pattern-across-three-independent-cuts level, never within a
+cell; and it is measured on Qwen2.5-VL only — the Qwen3-VL transfer rerun is
+in flight, and this entry is conditional on it.
 
 **Why it matters:** leaderboard averages cannot distinguish a better method
 from a luckier mix of question types; the stratifying variable (evidence count)
@@ -78,8 +91,25 @@ FLARE's own words, over ImageBind
 rather than 2 points. First completed runs: ImageBind's audio channel is
 near-dead on user-style queries (R@10 = 1.65% on an 87,697-clip gallery), with
 the pipeline exonerated end-to-end (its own demo pairs and real FLARE clips
-align 5/5 with wide margins). If confirmed, the field's default fusion averages
+align 5/5 with wide margins), and replicated cross-hardware (mm-lab01 mirror:
+R@10 1.655 vs cluster 1.652). If confirmed, the field's default fusion averages
 in a dead channel, and the operator question moves to strong-audio substrates.
+
+**Venue check (2026-08-11): ICASSP 2027, submission 2026-09-16 (~5 weeks).**
+Novelty verdict: the OBSERVATION (audio weak on FLARE) is in the FLARE paper
+itself ("audio-language alignment remains a key bottleneck"), and audio-text
+query-robustness is an active lane — Omni-Embed-Audio
+([2604.18360](https://arxiv.org/html/2604.18360)) reports CLAP "collapse
+ratios" by query formulation, and Robust Audio-Text Retrieval
+([2604.23323](https://arxiv.org/html/2604.23323v1)) hardens the same. What is
+NOT taken and shapes the 4-pager: the dead-CHANNEL audit for audio-VISUAL
+retrieval — alive-vs-aligned distinction with pipeline exoneration, the
+fusion-damage mechanism (averaging in a dead channel destroys a healthy one),
+cross-hardware replication, and substrate-conditional recovery on strong-audio
+encoders (WAVE-7B / Qwen-Omni, staged). Position against both papers above and
+against FLARE's own bottleneck sentence, or a reviewer will. Gate to commit:
+vision/unified rows + one strong-audio contrast must land first (in flight,
+same week).
 
 ### Imaginability audit (H3 line, design locked)
 
