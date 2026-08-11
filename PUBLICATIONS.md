@@ -91,8 +91,25 @@ FLARE's own words, over ImageBind
 rather than 2 points. First completed runs: ImageBind's audio channel is
 near-dead on user-style queries (R@10 = 1.65% on an 87,697-clip gallery), with
 the pipeline exonerated end-to-end (its own demo pairs and real FLARE clips
-align 5/5 with wide margins). If confirmed, the field's default fusion averages
+align 5/5 with wide margins), and replicated cross-hardware (mm-lab01 mirror:
+R@10 1.655 vs cluster 1.652). If confirmed, the field's default fusion averages
 in a dead channel, and the operator question moves to strong-audio substrates.
+
+**Venue check (2026-08-11): ICASSP 2027, submission 2026-09-16 (~5 weeks).**
+Novelty verdict: the OBSERVATION (audio weak on FLARE) is in the FLARE paper
+itself ("audio-language alignment remains a key bottleneck"), and audio-text
+query-robustness is an active lane — Omni-Embed-Audio
+([2604.18360](https://arxiv.org/html/2604.18360)) reports CLAP "collapse
+ratios" by query formulation, and Robust Audio-Text Retrieval
+([2604.23323](https://arxiv.org/html/2604.23323v1)) hardens the same. What is
+NOT taken and shapes the 4-pager: the dead-CHANNEL audit for audio-VISUAL
+retrieval — alive-vs-aligned distinction with pipeline exoneration, the
+fusion-damage mechanism (averaging in a dead channel destroys a healthy one),
+cross-hardware replication, and substrate-conditional recovery on strong-audio
+encoders (WAVE-7B / Qwen-Omni, staged). Position against both papers above and
+against FLARE's own bottleneck sentence, or a reviewer will. Gate to commit:
+vision/unified rows + one strong-audio contrast must land first (in flight,
+same week).
 
 ### Imaginability audit (H3 line, design locked)
 
