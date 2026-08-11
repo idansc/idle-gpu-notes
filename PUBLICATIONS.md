@@ -35,9 +35,15 @@ unreachable in principle from the query side, and we ship the one-eval test
 reads 10.7 points but the churn-corrected market for choosing WHICH 16 frames
 that frozen model sees is 2.5 ± 1 on LongVideoBench
 ([2407.15754](https://arxiv.org/abs/2407.15754)). The market is
-CHECKPOINT-DEPENDENT: on Qwen3-VL-8B the b16→b64 market doubles to 5.33 —
-Qwen2.5-VL was saturated, not the task — and Qwen3-VL's own churn floor is not
-yet measured (recompute pending), so floors may not transfer either.
+CHECKPOINT-DEPENDENT: on Qwen3-VL-8B the churn-corrected market rises to
+**3.8 ± 1** (raw b16→b64 net 5.33) — Qwen2.5-VL was saturated, not the task.
+Qwen3-VL's floor is now measured and the answer is the opposite of what we
+expected: **8.44 vs 8.12**, so churn is a property of the 4-option MCQ format
+rather than of the model, and floors DO transfer even though markets do not.
+Caveat kept: on Qwen3-VL the `lost` term (6.86) sits with 55 of 56 floor pairs
+above it, outside the floor's bulk where Qwen2.5-VL's sat centred — the same
+disjoint→nested transfer slack seen in the budget-32 replication — so quote
+2.5 → 3.8, both ±1, not two precise numbers.
 
 **Why it matters:** the frame-selection literature's typical claimed deltas are
 1–2 points against uniform or CLIP top-k — AKS
@@ -61,13 +67,22 @@ Language Model Reasoning" ([2504.07086](https://arxiv.org/abs/2504.07086)).
 **What we found:** query–frame similarity top-k (the default rule, as in AKS
 [2502.21271](https://arxiv.org/abs/2502.21271) and Q-Frame
 [2506.22139](https://arxiv.org/abs/2506.22139)) beats uniform spacing by 8
-points on questions needing ONE moment and falls BELOW uniform on questions
-needing ≥3 — and benchmark averages cancel the two regimes. Power scoping,
-per the ledger's own rule: the below-uniform multi-evidence cell is n=160
-where within-cell significance would need n≈17,818, so the inversion is
-supported at the pattern-across-three-independent-cuts level, never within a
-cell; and it is measured on Qwen2.5-VL only — the Qwen3-VL transfer rerun is
-in flight, and this entry is conditional on it.
+points on questions needing ONE moment and loses to coverage-aware rules on
+questions needing ≥3 — and benchmark averages cancel the two regimes.
+
+⛔ **The strong form is retired, as underpowered rather than as disproved.**
+We previously claimed top-k falls BELOW uniform on multi-evidence. That cell is
+n=160 and needs n≈17,818 for within-cell significance, so neither the original
+−5.0 (Qwen2.5-VL: 32.5 vs 37.5) nor the Qwen3-VL reversal (+1.8: 36.2 vs 34.4)
+is distinguishable from noise. The honest statement is **no support on either
+generation once powered correctly** — and that is itself the strata argument,
+since the cell was quotable precisely because nobody powered it.
+
+**The survivor is the ranking reversal**, which has real amplitude and holds on
+both generations: the top-k − AdaRD-key gap swings +8.2 → −6.9 between the
+single- and multi-evidence strata on Qwen2.5-VL, and +4.3 → −6.3 on Qwen3-VL.
+Relevance-heavy rules win localized evidence and lose distributed evidence;
+coverage-heavy rules do the reverse.
 
 **Why it matters:** leaderboard averages cannot distinguish a better method
 from a luckier mix of question types; the stratifying variable (evidence count)
@@ -75,6 +90,41 @@ is annotated in LongVideoBench and computable elsewhere. AGFS
 ([2603.20180](https://arxiv.org/abs/2603.20180)) observed per-category
 preference heterogeneity; evidence count is the per-item causal variable
 behind it. (Note 06.)
+
+### 4. Which long-video results survive a model generation — and which are leaderboard noise
+
+**What we found:** we re-ran the same protocol across two model generations with
+the frame selections held byte-identical (they are SigLIP-derived, so
+model-independent — only the answering model changes). Long split, n=976,
+budget 16.
+
+| result | Qwen2.5-VL-7B | Qwen3-VL-8B | verdict |
+|---|---|---|---|
+| candidate density buys | +6.0 | +5.8 | **survives** |
+| churn floor | 8.12 | 8.44 | **survives** (format property, not model) |
+| ranking reversal, top-k − AdaRD across strata | +8.2 → −6.9 | +4.3 → −6.3 | **survives** |
+| churn-corrected selection market | +2.5 | +3.8 | flips |
+| timestamped transcript, multi-evidence | +10.0 (χ²=5.92) | +2.5 (ns) | flips |
+
+**And the ordering of the methods themselves is not resolvable.** Within
+Qwen2.5-VL, of all pairs among {NMS-2s, cDPP, top-16, AKS, BOLT, AdaRD-key}
+exactly one clears paired McNemar — NMS-2s over AdaRD-key, +3.18, χ²=4.76.
+Within Qwen3-VL **none clears**: the whole six-method table, spanning 56.8 to
+59.4, is one statistical blob. And the single separable pair on the older model
+is dead even on the newer one (−0.10, χ²=0.00). Rank changes people would
+report as findings — cDPP overtaking NMS, AdaRD-key rising from last to third —
+are shuffles among differences of 0.1–0.4 with χ² < 0.1.
+
+**Why it matters:** this is the two-axis audit. On the strata axis, benchmarks
+cannot resolve published method deltas *within* strata (entry 3's power table:
+1–3 point method differences need 500–18,000 items per stratum; LongVideoBench
+supplies 160 and 439). On the generation axis, the results that do reach
+significance divide cleanly into structural ones that transfer and
+capacity-limited ones that do not. A reader can use the split to decide which
+of their own results to distrust: anything whose size is set by what the model
+*cannot yet do* is a statement about a checkpoint. A third anchor
+(Qwen2-VL-7B, 2024) is running to make generation a trend rather than a pair.
+(Note 06, `papers/swing3-strata-spec.md`.)
 
 ---
 
