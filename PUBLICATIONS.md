@@ -157,36 +157,34 @@ anchor to test, not as a measured trend.
 
 ## Pending — expected to reach this bar
 
-### FLARE fusion screen (grid running)
+### FLARE: the field's audio-visual fusion collapses are a missing hyperparameter
 
-FLARE ([2605.10228](https://arxiv.org/abs/2605.10228)) is the first benchmark
-whose queries REQUIRE two modalities, and where the incumbent fusion — average
-pooling of L2-normalized embeddings, the "standard late-fusion practice" in
-FLARE's own words, over ImageBind
-([2305.05665](https://arxiv.org/abs/2305.05665)) / LanguageBind
-([2310.01852](https://arxiv.org/abs/2310.01852)) — costs some models 2.5–7×
-rather than 2 points. First completed runs: ImageBind's audio channel is
-near-dead on user-style queries (R@10 = 1.65% on an 87,697-clip gallery), with
-the pipeline exonerated end-to-end (its own demo pairs and real FLARE clips
-align 5/5 with wide margins), and replicated cross-hardware (mm-lab01 mirror:
-R@10 1.655 vs cluster 1.652). If confirmed, the field's default fusion averages
-in a dead channel, and the operator question moves to strong-audio substrates.
+**What we found:** on the first benchmark whose queries require BOTH vision and
+audio (FLARE, [2605.10228](https://arxiv.org/abs/2605.10228)), the standard
+fusion — average of L2-normalized embeddings, the recipe FLARE itself calls
+"standard late-fusion practice" — HALVES ImageBind's performance on a fixed
+query set (R@1 12.61 vision-only → 5.86 fused, 2.15×; 3.0× on vision-targeted
+queries), while an audit shows one scalar repairs it entirely: weighting
+vision at 0.95 recovers 12.81, found independently twice (video-level-holdout
+α sweep and Old Paper's scalar sweep, same value, same number). Audio's
+marginal contribution at score level is +0.20. The mechanism is derived, not
+narrated: normalized-mean score = (q·v + q·a)/√(2+2·v·a), measured
+cos(v,a)=0.25 → 0.63× margin compression plus injected audio noise — and the
+same averaging RESCUES audio-targeted queries 8× (0.12 → 0.97), the free-ride
+asymmetry that proves the mechanism.
 
-**Venue check (2026-08-11): ICASSP 2027, submission 2026-09-16 (~5 weeks).**
-Novelty verdict: the OBSERVATION (audio weak on FLARE) is in the FLARE paper
-itself ("audio-language alignment remains a key bottleneck"), and audio-text
-query-robustness is an active lane — Omni-Embed-Audio
-([2604.18360](https://arxiv.org/html/2604.18360)) reports CLAP "collapse
-ratios" by query formulation, and Robust Audio-Text Retrieval
-([2604.23323](https://arxiv.org/html/2604.23323v1)) hardens the same. What is
-NOT taken and shapes the 4-pager: the dead-CHANNEL audit for audio-VISUAL
-retrieval — alive-vs-aligned distinction with pipeline exoneration, the
-fusion-damage mechanism (averaging in a dead channel destroys a healthy one),
-cross-hardware replication, and substrate-conditional recovery on strong-audio
-encoders (WAVE-7B / Qwen-Omni, staged). Position against both papers above and
-against FLARE's own bottleneck sentence, or a reviewer will. Gate to commit:
-vision/unified rows + one strong-audio contrast must land first (in flight,
-same week).
+**Why it matters:** this is the fifth null with a NEW shape — the incumbent is
+not near-optimal (ViDoRe-style) but BADLY CHOSEN, and every
+ImageBind/LanguageBind deployment using mean fusion is paying 2–7× for a
+missing hyperparameter with a one-line fix. The audit (fixed-query/varied-media
+screen + per-channel operator rows + the dead-channel instrument outcomes,
+note 05) ports to any AV retrieval stack; where both channels are alive
+(WAVE-7B, contrast running against its 42.63 query-based anchor) the fusion
+question reopens genuinely. Harness agreement with the paper: fused 5.86 vs
+published 6.35 (−7.7%); the controlled vision-vs-fused contrast is NEW —
+the paper never ran it query-based. Venue: ICASSP 2027 (submission
+2026-09-16); the one-scalar repair for deployed systems is the 4-pager's
+spine, with the operator question scoped to live-channel substrates.
 
 ### Imaginability audit (H3 line, design locked)
 
