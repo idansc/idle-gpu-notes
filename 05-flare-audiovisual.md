@@ -19,7 +19,9 @@ varies. ImageBind, gallery 87,697 clips / 399 videos, zero missing records.
 | audio | both (avg) | 0.97 | 2.74 | 4.08 | 2790 | 135,003 |
 
 **On queries built to require both modalities, `normalize((v+a)/2)` scores 5.86
-against 12.61 for vision alone — 2.15× worse.** The vision-query control
+against 12.61 for vision alone — 2.15× worse.** ⚠️ **But the bar for any learned
+operator here is 12.81, not 5.86** — a single tuned scalar recovers the collapse
+(see below). Never quote the 5.86 gap as available headroom. The vision-query control
 collapses the same way, 31.00 → 10.32.
 
 Mechanism, exactly as the paper describes but now measured on a fixed query set:
@@ -42,6 +44,10 @@ Sweeping a fixed weight on the cached galleries (no GPU, no re-encoding),
 
 **One scalar recovers the whole 2.15× collapse** (5.00 → 12.81), and audio's
 genuine contribution at its optimum is **+0.20 R@1 over vision alone**.
+
+Replicated independently: a 5-fold **held-out** fit by a second line gives
+α\* = 0.95 and held-out R@1 **12.81** — same optimum, same value, and the
+held-out version rules out the grid sweep having overfit.
 
 So the honest reading of the published ImageBind/LanguageBind collapses (2.5× and
 7.4×) is *equal weighting*, not "fusion is hard". A single tuned number fixes
@@ -224,6 +230,7 @@ Text→media R@1 / R@10 / MedianRank, unified queries (n=53,580) unless noted:
 |---|---|---|---|
 | vision-only | 12.61 | 38.57 | 23 |
 | incumbent fusion (normalized-vector mean) | 5.86 | 21.25 | 95 |
+| **best fixed weight, w = 0.95** | **12.81** | — | — |
 | audio-only | 0.25 | 1.65 | 3356 |
 | score-mean | 5.00 | 18.84 | 122 |
 | per-item max | 9.73 | 31.42 | 42 |
@@ -241,7 +248,8 @@ Qwen3-VL-Emb-8B 60.82).
 
 The asymmetry that is the mechanism: the same average RESCUES audio queries
 (0.12 → 0.97 R@1, 8×, n=135,003) while destroying vision queries (31.00 →
-10.32, 3.0×) and the bimodal-constraint queries (12.61 → 5.86, 2.15×). One
+10.32, 3.0×) and the bimodal-constraint queries (12.61 → 5.86, 2.15×) — both
+repaired by one scalar to 12.81. One
 line of algebra says why: the normalized-mean score is
 (q·v + q·a) / sqrt(2 + 2 v·a); measured cos(v,a) = 0.25 ± 0.12 compresses
 vision margins by ~0.63× while q·a (sd 0.075, pure noise here) reorders the
