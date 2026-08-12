@@ -102,13 +102,27 @@ the frame selections held byte-identical (they are SigLIP-derived, so
 model-independent — only the answering model changes). Long split, n=976,
 budget 16.
 
-| result | Qwen2.5-VL-7B | Qwen3-VL-8B | verdict |
-|---|---|---|---|
-| candidate density buys | +6.0 | +5.8 | **survives** |
-| churn floor | 8.12 | 8.44 | **survives** (format property, not model) |
-| ranking reversal, top-k − AdaRD across strata | +8.2 → −6.9 | +4.3 → −6.3 | **survives** |
-| churn-corrected selection market | +2.5 | +3.8 | flips |
-| timestamped transcript, multi-evidence | +10.0 (χ²=5.92) | +2.5 (ns) | flips |
+| result | Qwen2-VL-7B (2024) | Qwen2.5-VL-7B (2025) | Qwen3-VL-8B (Oct 2025) | verdict |
+|---|---|---|---|---|
+| candidate density buys | +6.15 | +6.0 | +5.8 | **survives, flat** |
+| churn floor | 8.64 | 8.12 | 8.44 | **survives, flat** (format property, not model) |
+| ranking reversal, top-k − AdaRD across strata | — | +8.2 → −6.9 | +4.3 → −6.3 | **survives** |
+| selection market, *disjoint-pairs floor* | +2.02 | +2.54 | +3.75 | grows |
+| selection market, *nested (`lost`) floor* | +3.18 | +2.77 | +5.33 | grows, not monotone |
+| timestamped transcript, multi-evidence | — | +10.0 (χ²=5.92) | +2.5 (ns) | flips |
+
+⚠️ **Two floor conventions, shown deliberately, because they disagree.** The
+corrected market is `recover − floor`. Taking the floor from disjoint random
+same-budget pairs gives the monotone series; taking it as the nested `lost` term
+gives `recover − lost`, the raw net, which is not monotone. They diverge exactly
+where the transfer slack is largest — `lost` sits at the edge of its floor on 2
+of 3 models (51/56 and 55/56 pairs above it; only Qwen2.5-VL is centred at
+42/56), which is an argument for the nested reading.
+
+**What is robust to both conventions, and all we claim:** Qwen3-VL's market
+exceeds *both* earlier generations under either floor, while density does not
+move. Strict monotonicity rests on the 2.02-vs-2.54 gap and is one floor-choice
+away from reversing, so we do not assert it.
 
 **And the ordering of the methods themselves is not resolvable.** Within
 Qwen2.5-VL, of all pairs among {NMS-2s, cDPP, top-16, AKS, BOLT, AdaRD-key}
@@ -119,6 +133,13 @@ is dead even on the newer one (−0.10, χ²=0.00). Rank changes people would
 report as findings — cDPP overtaking NMS, AdaRD-key rising from last to third —
 are shuffles among differences of 0.1–0.4 with χ² < 0.1.
 
+**Pre-registered for the fourth anchor** (Qwen3.6-35B-A3B, 2026-04), stated on
+quantities that do not inherit the market's ±1 error: (a) market(Qwen3.6) >
+market(Qwen3-VL) means the growth continues, ≤ means it flattens; (b) density
+stays in [5.5, 6.5]; (c) churn floor stays in [8, 9]. We deliberately do *not*
+pre-register a density:market ratio — with ±1 on the market, 6.15/(2.02±1) spans
+2.0× to 6.0×, so a ratio trend would be illustration rather than measurement.
+
 **Why it matters:** this is the two-axis audit. On the strata axis, benchmarks
 cannot resolve published method deltas *within* strata (entry 3's power table:
 1–3 point method differences need 500–18,000 items per stratum; LongVideoBench
@@ -126,8 +147,10 @@ supplies 160 and 439). On the generation axis, the results that do reach
 significance divide cleanly into structural ones that transfer and
 capacity-limited ones that do not. A reader can use the split to decide which
 of their own results to distrust: anything whose size is set by what the model
-*cannot yet do* is a statement about a checkpoint. A third anchor
-(Qwen2-VL-7B, 2024) is running to make generation a trend rather than a pair.
+*cannot yet do* is a statement about a checkpoint. The suggestive form — the
+market's upper envelope grows across generations while density stays flat, so
+selection may be closing on sampling — is offered as a hypothesis for the fourth
+anchor to test, not as a measured trend.
 (Note 06, `papers/swing3-strata-spec.md`.)
 
 ---
