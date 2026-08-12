@@ -34,7 +34,7 @@ or signed.**
 | [NevIR negation](02-nevir-negation.md) | signed | wins (21.7 → 25.4 frozen, 46.2 trained) |
 | [MMEB VisDial image retrieval](03-mmeb-visdial.md) | redundant | ties exactly (+0.2 pts, gate active) |
 | [MultiVENT 2.0 / CLaMR](04-multivent-clamr.md) | redundant across channels | operator bounded at +1.7 |
-| [FLARE audiovisual](05-flare-audiovisual.md) | **non-redundant by construction** | **hand-designed fusion is 2.15× WORSE than one modality** |
+| [FLARE audiovisual](05-flare-audiovisual.md) | non-redundant *by construction*, redundant in practice | fusion collapse is a missing scalar; audio worth **+0.20** once weighted |
 | [LongVideoBench frame selection](06-longvideo-frame-selection.md) | localized ↔ distributed *(does the best operator depend on the item?)* | ceiling is +2.5 for *any* selector, so ties are the expected outcome; within it the *hand-designed winner inverts* with evidence count |
 
 If your evidence is redundant across positions — many patches of a page all

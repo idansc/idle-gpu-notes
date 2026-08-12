@@ -31,6 +31,33 @@ Audio-liveness gate passes, so the weakness is the audio-text *embedding*, not
 our extraction: 240 wavs across 60 videos, median RMS 0.067, 0.8% silent,
 cross-clip spectral cosine −0.004 (p95 0.308).
 
+## The collapse is a missing scalar, not a fusion problem
+
+Sweeping a fixed weight on the cached galleries (no GPU, no re-encoding),
+`s(w) = w·(q·v) + (1−w)·(q·a)`, same 53,580 unified queries:
+
+| w | 0.00 | 0.50 | 0.80 | 0.90 | **0.95** | 1.00 |
+|---|---|---|---|---|---|---|
+| R@1 | 0.25 | 5.00 | 11.60 | 12.80 | **12.81** | 12.61 |
+
+**One scalar recovers the whole 2.15× collapse** (5.00 → 12.81), and audio's
+genuine contribution at its optimum is **+0.20 R@1 over vision alone**.
+
+So the honest reading of the published ImageBind/LanguageBind collapses (2.5× and
+7.4×) is *equal weighting*, not "fusion is hard". A single tuned number fixes
+them. And once fixed, the second modality is worth 0.2 points — on the benchmark
+built specifically so queries require both.
+
+This is the fifth null for "a learned reduction beats a hand-designed one", but
+with a new shape: here the hand-designed operator was **badly chosen** rather
+than near-optimal, and the repair is one scalar, not a learned function. Anyone
+proposing a learned fusion here must beat 12.81, not the 5.86 the literature
+reports.
+
+Scope: this is score-level fusion of two single-vector embeddings. A token-level
+or query-conditioned operator could in principle extract more, but the ceiling it
+would be chasing is audio's +0.20 marginal contribution at score level.
+
 **Calibration.** The paper's query-based Table 3 has no ImageBind vision-only row
 — the single ImageBind row is the *fused* variant at 6.35/16.59/23.09. Our fused
 arm on unified queries is 5.86, i.e. −7.7%: acceptable harness agreement. Our
