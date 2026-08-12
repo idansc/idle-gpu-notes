@@ -15,9 +15,13 @@ Assembly drafts live in `papers/`.
 **What we found:** for 9 of 10 MultiVENT queries, SOME weighting of the four
 channel scores would rank the right video first (89.3%, vs 0.8% for a random
 decoy) — but a model trained to produce that weighting from the query alone
-gains nothing at probe level (56.23 vs plain max 57.43; single seed, linear
-probe, post-norm features — pre-norm rerun queued). The headroom is real
-geometry and, at least at probe level, absent information.
+gains nothing at ANY capacity we could make learn: the full ladder — linear /
+MLP-256 / token-attention heads on pre-norm features, 3 seeds, video-disjoint
+5-fold — tops out at 56.74 ± 0.00 (pre-norm linear) vs plain max 57.43, with
+capacity only adding variance (MLP-256: 54.00 ± 3.88; attention: 55.16 ± 1.33)
+and the post-norm linear anchor reproducing (56.25 ± 0.02 vs the original
+56.23). The headroom is real geometry and absent information — un-decodable
+from the query across the ladder.
 
 **Why it matters:** oracle and upper-bound gaps are standard motivation in
 selection/fusion work — Frame-Voyager builds its training signal from
