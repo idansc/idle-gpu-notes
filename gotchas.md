@@ -261,3 +261,30 @@ Fixes that hold: set the module-level FORCE variable AND
 global alone does not take if anything already called it), then assert the
 chosen backend. Rule: pin backend selection explicitly wherever a library
 auto-selects; an availability probe is not an importability proof.
+
+## Composite checkpoints: the sub-model tower must come from the snapshot itself
+
+WAVE-7B finetunes its BEATs audio tower and ships the finetuned weights in the
+HF snapshot under the STANDARD filename `BEATs_iter3_plus_AS2M.pt`. Wire
+`WAVE_BEATS_WEIGHT_PATH` to any public download of that filename and you get a
+base — not finetuned — audio tower: 249/250 tensors differ (max Δ 0.22), zero
+warnings, healthy logs, plausible embeddings. Bundled copy vs the main ckpt
+agrees to bf16 rounding (max Δ 0.012), which is the fingerprint that the
+bundled file is the trained one. Only a tensor-level diff against the snapshot
+exposes the swap.
+
+Rule, beyond WAVE: for ANY composite checkpoint (Qwen-Omni-class models bundle
+audio towers the same way), sub-model paths never resolve by filename or
+env-var to an external download — always the snapshot's own copy, asserted at
+load by comparing a few tensors against the main checkpoint. Corollary for
+torch ≥ 2.7: the weight_norm shim reports pos_conv `weight_g/weight_v` as
+"newly initialized" even when correctly loaded from the bundled file — that
+warning is benign ONLY under the snapshot-copy rule.
+
+Two smaller traps from the same runs: FLARE's `eval_run.sh` hardcodes
+`CUDA_VISIBLE_DEVICES=${IDX}` (line 221), which REPLACES any outer pin — five
+"parallel" arms serialized onto one GPU for 27 h with healthy logs; patch it to
+honor an override before multi-GPU use (per-shard resume makes the kill
+lossless). And plain-PyPI `torchaudio` 2.11.0 ships a CUDA-13 build that fails
+at import (`libcudart.so.13`) beside a cu128 torch — pin `2.11.0+cu128` from
+the PyTorch index.
