@@ -288,3 +288,66 @@ honor an override before multi-GPU use (per-shard resume makes the kill
 lossless). And plain-PyPI `torchaudio` 2.11.0 ships a CUDA-13 build that fails
 at import (`libcudart.so.13`) beside a cu128 torch — pin `2.11.0+cu128` from
 the PyTorch index.
+
+## A guarded fallback reports the guard's message, not the failure
+
+We disabled a library's fallback video reader because it whole-reads hour-long
+videos and OOM-kills the job:
+
+```python
+def _no_torchvision(ele):
+    raise RuntimeError("torchvision fallback disabled: whole-video read OOMs")
+VIDEO_READER_BACKENDS["torchvision"] = _no_torchvision
+```
+
+The library's `fetch_video` wraps the *chosen* backend in `try/except` and falls
+back to torchvision on **any** exception. So every upstream failure — whatever it
+actually was — arrives as that one sentence. Two separate root causes produced
+byte-identical output across 976 items, twice, and both times the message named
+the innocent stage.
+
+The uniformity is what misleads. 976 identical errors reads as "one systematic
+problem with my configuration", so you debug the guard. It is really "976 masked
+exceptions that happen to funnel through the same handler", and the real cause
+was different each time (once a backend-selection change, once a strict-dataclass
+validation error four frames deeper).
+
+Make the guard confess what it is standing on:
+
+```python
+def _no_torchvision(ele):
+    import sys, traceback
+    cur = sys.exc_info()[1]
+    detail = ("".join(traceback.format_exception_only(type(cur), cur)).strip()
+              if cur is not None else "no upstream exception recorded")
+    raise RuntimeError(f"torchvision fallback disabled. THE REAL FAILURE IT "
+                       f"MASKED: {detail}")
+```
+
+That one change turned a two-round diagnosis into a single run. Any time you
+replace a fallback with a raise, attach `sys.exc_info()[1]` — you are standing
+inside someone else's `except` block whether you meant to be or not.
+
+## Two more ways to run code you did not think you were running
+
+Both cost us real time in the same week, both silent.
+
+**A tracked file copied out-of-band gets reverted by the next copy.** A
+collaborator patched a script directly on the cluster; we then edited our local
+copy of the *same* file and `scp`'d it over, silently reverting their fix. The
+symptom was a bug that had already been fixed reappearing with no commit
+explaining it. Rule: files under version control move through the repository
+only. If the cluster copy is not a clone, that is the bug.
+
+**A job that invokes a script once per arm can run different code per arm.** A
+sweep shaped like `for model in ...; do python eval.py ...; done` re-reads the
+script on every iteration. Editing it mid-run means early arms and late arms
+execute different versions, inside one results file, with nothing recording the
+difference. We got away with it because the edits were verified no-ops, which is
+luck. Stage edits and deploy between jobs — and stamp the code/library versions
+into the output records so the question is answerable after the fact:
+
+```python
+rec["env"] = {"transformers": transformers.__version__,
+              "torch": torch.__version__, "model_class": arch}
+```
