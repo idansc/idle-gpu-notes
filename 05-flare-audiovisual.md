@@ -207,3 +207,53 @@ the conjunctive structure this benchmark claims, run first this time:
 If audio's marginal contribution on unified queries is large, this benchmark can
 support the fusion question and the operator work is justified. If it is ~0.3 like
 MultiVENT's frames, we stop and write up four nulls instead of three.
+
+## Screen results (2026-08-12) — the branch fires
+
+Grid complete: 7 configs, fixed-query-set / varied-media-scope, ImageBind,
+87,697-clip gallery; replicated cross-hardware (mm-lab01 mirror matches the
+cluster to 0.003 R@10 on the audio arm). Gate 2 closed: our fused 5.86 vs the
+paper's published fused 6.35 (−7.7% harness agreement); our vision-only 31.00
+on vision queries brackets between the paper's CLIP (13.89) and SigLIP2
+(33.98). The controlled vision-vs-fused contrast below is NEW — the paper
+never ran it query-based.
+
+Text→media R@1 / R@10 / MedianRank, unified queries (n=53,580) unless noted:
+
+| arm | R@1 | R@10 | MedR |
+|---|---|---|---|
+| vision-only | 12.61 | 38.57 | 23 |
+| incumbent fusion (normalized-vector mean) | 5.86 | 21.25 | 95 |
+| audio-only | 0.25 | 1.65 | 3356 |
+| score-mean | 5.00 | 18.84 | 122 |
+| per-item max | 9.73 | 31.42 | 42 |
+| per-item min | 2.09 | 7.86 | 1254 |
+| calibrated (z) min | 2.46 | 9.73 | 651 |
+| best fixed α, VIDEO-LEVEL HOLDOUT | 12.81 | 39.07 | 22 |
+
+α* = 0.95 on every one of five source-video folds — the tuned scalar is
+vision-plus-a-whisper and ties vision-only, exactly the pre-registered branch:
+**on ImageBind, the scalar ends the ladder; no operator arms run on this
+substrate; operator work moves to the strong-audio incumbents** (WAVE-7B
+query-based anchor 42.63 — NOT the caption-based 65.51; Qwen2.5-Omni-7B;
+Qwen3-Omni-30B; published vision ceiling for the incumbent table:
+Qwen3-VL-Emb-8B 60.82).
+
+The asymmetry that is the mechanism: the same average RESCUES audio queries
+(0.12 → 0.97 R@1, 8×, n=135,003) while destroying vision queries (31.00 →
+10.32, 3.0×) and the bimodal-constraint queries (12.61 → 5.86, 2.15×). One
+line of algebra says why: the normalized-mean score is
+(q·v + q·a) / sqrt(2 + 2 v·a); measured cos(v,a) = 0.25 ± 0.12 compresses
+vision margins by ~0.63× while q·a (sd 0.075, pure noise here) reorders the
+compressed near-ties.
+
+Pre-registered instrument outcomes (stated before the numbers landed, in the
+fleet log): raw flanked count came out LARGE (81.5%) and uninformative as
+registered — with one dead channel and an 87,697 gallery it measures
+reachability, not conjunction (only 18.2% of golds are rank-1-able and 45.9%
+top-10-able under ANY α; contrast MultiVENT: 89.3% rankable-first in a 1,504
+pool with four live channels). Decoy: 99.99% infeasible, trivially. The
+load-bearing dead-channel zero held: min-rescued 3,178 vs min-vulnerable
+14,799 — net −11,621, and on the flanked subset z-min reaches top-10 for 6.0%
+vs max's 19.2%. The conjunctiveness question is UNTESTABLE on this substrate
+and moves with the operator work.

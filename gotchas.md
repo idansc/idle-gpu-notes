@@ -237,3 +237,27 @@ optimistic ranker out of reportable paths (rename it `_UNREPORTABLE`); and the
 same duplicated pool makes LP flanking counts unsatisfiable by construction
 (gold−distractor margins exactly 0.0), so screen diagnostics must dedup or
 margin-epsilon first.
+
+## Auto-selected backends silently change across library versions
+
+The same script, same data, same model can do something different because a
+dependency's availability probe answers differently in a new environment.
+Instance: qwen-vl-utils picks its video reader by probing
+`importlib.util.find_spec("torchcodec")` — which says yes whenever the package
+is INSTALLED, even if `import torchcodec` fails (broken .so). Under the new
+env the selector silently chose torchcodec over decord, so a subset-reader
+hook patched onto the DECORD backend was never called and every
+`frame_indices` list was silently ignored — the run would have degraded to
+uniform sampling while looking like a selection sweep. The only reason it
+failed loudly instead: the torchvision fallback had been deliberately replaced
+with a guard, which converted silent corruption into 976 identical errors.
+(Also the diagnosis trap inside the trap: the guard's message masks WHICH
+upstream stage broke — the first diagnosis blamed a return-contract change
+that did not exist. `pip list` agreeing on qwen-vl-utils versions is what
+settled it.)
+
+Fixes that hold: set the module-level FORCE variable AND
+`get_video_reader_backend.cache_clear()` (it is lru_cached — setting the
+global alone does not take if anything already called it), then assert the
+chosen backend. Rule: pin backend selection explicitly wherever a library
+auto-selects; an availability probe is not an importability proof.
