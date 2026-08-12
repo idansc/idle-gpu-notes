@@ -59,7 +59,7 @@ work someone already paid for.
 | Learned reduction over MultiVENT's 4 channel scores | Bounded at +1.7 by a perfect oracle |
 | Frame selection on MultiVENT | Deleting ALL frames costs 0.32 — nothing to select |
 | Audio as a 5th MultiVENT channel | Wrong gap: unreachable queries are visual |
-| FLARE as a fusion testbed | Queries have a hard bimodal constraint — **promising**, screen running |
+| FLARE as a fusion testbed | **The one positive: naive avg fusion 5.86 vs vision-only 12.61 on bimodal queries** |
 
 ## Contributing back
 

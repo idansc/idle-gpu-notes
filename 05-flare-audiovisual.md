@@ -1,7 +1,58 @@
 # 05 — FLARE: the first benchmark where the modalities are actually non-redundant
 
-**Status: in progress. Data prepared, screen not yet run. Recorded now because the
-benchmark *selection* reasoning is the transferable part.**
+**Status: screen complete. The hand-designed operator destroys information here —
+the first such case in five benchmarks.**
+
+## The result
+
+Controlled screen: the same 53,580 unified queries throughout, only `media_mode`
+varies. ImageBind, gallery 87,697 clips / 399 videos, zero missing records.
+
+| query set | media | R@1 | R@5 | R@10 | MedR | n |
+|---|---|---|---|---|---|---|
+| unified | **vision** | **12.61** | 29.22 | 38.56 | 23 | 53,580 |
+| unified | audio | 0.25 | 0.99 | 1.65 | 3356 | 53,580 |
+| unified | **both (avg)** | **5.86** | 15.12 | 21.24 | 95 | 53,580 |
+| vision | vision | 31.00 | 54.85 | 64.39 | 4 | 86,350 |
+| vision | both (avg) | 10.32 | 22.50 | 29.68 | 51 | 86,350 |
+| audio | audio | 0.12 | 0.47 | 0.78 | 8718 | 135,003 |
+| audio | both (avg) | 0.97 | 2.74 | 4.08 | 2790 | 135,003 |
+
+**On queries built to require both modalities, `normalize((v+a)/2)` scores 5.86
+against 12.61 for vision alone — 2.15× worse.** The vision-query control
+collapses the same way, 31.00 → 10.32.
+
+Mechanism, exactly as the paper describes but now measured on a fixed query set:
+audio alone is 0.25 (chance = 1/87,697 = 0.001%, so ~220× chance — live but very
+weak), and averaging that into a 12.61 vision signal halves it. The reduction is
+dominated by the weaker component.
+
+Audio-liveness gate passes, so the weakness is the audio-text *embedding*, not
+our extraction: 240 wavs across 60 videos, median RMS 0.067, 0.8% silent,
+cross-clip spectral cosine −0.004 (p95 0.308).
+
+**Calibration.** The paper's query-based Table 3 has no ImageBind vision-only row
+— the single ImageBind row is the *fused* variant at 6.35/16.59/23.09. Our fused
+arm on unified queries is 5.86, i.e. −7.7%: acceptable harness agreement. Our
+vision-only 31.00 has no published counterpart but brackets sanely inside the
+paper's own vision group (CLIP 13.89 < 31.00 < SigLIP2 33.98), consistent with
+ImageBind's ViT-H tower.
+
+So the **vision-only vs fused contrast on query-based queries is not in the
+paper** — it is new content, and it is what shows the operator is the problem
+rather than the encoder.
+
+**Caveat that shaped the design:** the three query sets differ in difficulty
+(vision-only scores 31.00 on vision queries but 12.61 on unified queries; audio
+scores *higher* on unified queries than on audio queries). Compare only within a
+fixed query set. This is why the screen holds the query set fixed instead of
+inheriting the paper's cross-table pairing — and why the earlier "19.04 → 7.64"
+caveat mattered.
+
+---
+
+*(Original note below; the benchmark-selection reasoning is the transferable
+part.)*
 
 ## Why this one, after three failures
 
