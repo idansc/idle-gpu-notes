@@ -1002,3 +1002,38 @@ kernel-vs-kernel differences can be anywhere from 1e-5 to 1e-3 — which map to
 R@1 movements of 0.005 and 0.105 respectively. Measure ε directly (re-encode with
 a different batch composition; accumulation order changes, nothing else does) and
 read the predicted churn off the margin CDF.
+
+## Before asking whether a setting is correct, ask whether it is yours
+
+Chasing a reproduction gap against published numbers, we spent an afternoon on
+four candidate causes: a pixel cap, a frame budget, per-modality decode defaults,
+and the query prompt template. Three died the same way, and the shared argument
+is cheaper than any of the investigations that found it.
+
+If a value is **upstream** — the benchmark's own code, unmodified — then the
+authors' run used it too. It is common-mode with the anchor and cannot produce a
+discrepancy, whatever its value, and whether or not it looks sensible. The
+question "is `clips_per_video=3` too small?" is unanswerable and irrelevant; the
+question "did *we* set it?" is a `git diff` and settles it.
+
+```bash
+git -C "$REPO" diff --stat        # if your change isn't listed, it isn't yours
+```
+
+Run that first. It eliminates most candidates in seconds, and it eliminates them
+on a stronger argument than plausibility ever gives you — the surviving hunt is
+then confined to what you actually changed plus what is genuinely outside the
+repo (inputs you extracted, hardware, library versions).
+
+⚠️ **Necessary, not sufficient: "upstream now" is only "upstream then" if your
+clone is at the commit that produced the published numbers.** A repository that
+moved after publication carries defaults the authors never ran, and they will
+still show up as untouched in your diff. Pin the check:
+
+```bash
+git -C "$REPO" log -1 --format='%H %ci'          # what am I actually at?
+git -C "$REPO" log -S'176400' -- path/to/file    # when did this value appear?
+```
+
+If the value postdates the paper, it is upstream AND a deviation — the one
+combination the quick test reads as safe.
