@@ -650,6 +650,13 @@ Result counts identical across two readings minutes apart settles it
 independently of any process listing, and would have been right in every one of
 the four cases above.
 
+The same rule protects against the opposite error, which cost another line two
+relaunches: a job that has produced *nothing yet* is not necessarily hung. An
+accidentally quadratic setup step — a dict comprehension nested inside a list
+comprehension, rebuilding a 37,029-entry map for each of 53,580 queries — sits
+silent for many minutes before its first print, which is indistinguishable from
+a bad mount. Before killing a silent job, check whether it is burning CPU.
+
 **The same trap in `pkill` does not return a wrong answer — it kills you.**
 Clearing the redundant workers:
 
@@ -750,3 +757,31 @@ from `dataset_summary.json`" and "derived from a chunk count in a different run"
 should never be indistinguishable, and progress counters are a common source of
 the confusion: the `n/n` inside a per-worker progress bar was counting *clips
 within the current video*, not videos.
+
+
+## A bootstrap with the hyperparameter held fixed is too narrow
+
+Tuning a fusion weight and then bootstrapping the result, we resampled queries
+while holding the tuned `w` at its full-data value. The honest procedure redoes
+the selection inside every resample, because the thing being estimated is
+"tune on your data, apply to new data" — and the tuning is part of it.
+
+  weights fixed, queries resampled     +0.254   95% CI [+0.112, +0.398]
+  selection redone inside each resample +0.254   95% CI [+0.063, +0.386]
+
+**The point estimate did not move at all**, and this is what makes the trap hard
+to see. Every one of the 5 folds selects the same `w`, so off-fold selection
+returns the plug-in answer and nothing looks wrong. The bias was never in the
+estimate — it was in the **interval**, which was 1.13× too narrow, moving the
+lower bound from +0.112 to +0.063. We had been chasing a bias in the wrong
+place: the prediction going in was that the estimate would drop to ~+0.20, and
+it did not budge.
+
+Selection is stable on the data you have and unstable under resampling — the
+same grid whose argmax is unanimous across folds is the argmax in only 79.8% of
+bootstrap resamples. A fixed-weight interval quietly asserts that the tuning
+step contributes no variance.
+
+Any interval around a tuned quantity has to include the tuning. The tell that
+you have it wrong is comfort: an interval that does not widen when you add a
+selection step is an interval that never modelled the selection.
