@@ -226,6 +226,19 @@ identical subset; absolute R@1 shifts but the three-way split is preserved at
 venue selection; until it does, the split is UNMEASURED and the entry does not
 claim a derived mechanism.
 
+**The two pending runs, with owners — they are INDEPENDENT.** (i) The q·a=0
+control above, isolating gallery-side (b): owned by the FLARE/audiovisual line
+(note 05), which has the v/a galleries resident for its w-sweep; needs a GPU.
+(ii) The 2–3 parameter per-group weight, testing query-side structure: owned by
+the line that ran the oracle, minutes on cached artifacts, no GPU. Neither
+constrains the other — (b) is heterogeneity across GALLERY items, the per-group
+weight is structure across QUERIES. A null on the control does NOT pre-discount
+the per-group result: if (b) is exactly zero and the whole collapse is injected
+q·a, then audio is noise for vision-targeted queries and signal for
+audio-targeted ones, the optimal w still differs sharply by group, and the full
++5.64 remains on the table. If anything a negligible (b) makes the per-group
+run MORE decisive, since it would be the only structure left.
+
 **Two corrections we carry rather than bury.** Our earlier "12.81 at w=0.95,
 found independently twice" was a SHARED BLIND SPOT: two sweeps agreed because
 neither grid contained 0.93, so the agreement was one measurement run twice,
