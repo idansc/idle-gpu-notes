@@ -1037,3 +1037,36 @@ git -C "$REPO" log -S'176400' -- path/to/file    # when did this value appear?
 
 If the value postdates the paper, it is upstream AND a deviation — the one
 combination the quick test reads as safe.
+
+## A protocol fix can be correct and worth nothing
+
+A run was found sampling 32 seconds of audio where the benchmark's own default is
+64. It was a genuine deviation from protocol, it was fixed, and the fix was
+described — by the line that found it and by the critic who relayed it — as the
+save of the day.
+
+Both budgets were then measured on the same 399-video gallery:
+
+```
+        R@1      R@5      R@10
+32s   7.3908   17.831   23.888
+64s   7.4057   17.816   23.998
+Δ     +0.015   −0.015   +0.110
+```
+
+Nothing. And it was predictable in advance from the data: median clip audio is
+6.8s, p99 is 42.7s, and the code path *subsamples* rather than truncates, so a
+32-second budget touched 2.5% of clips and only thinned them.
+
+Two habits fall out. **Fix protocol deviations regardless of expected size** —
+compliance is not conditional on the effect, and re-running converted a live
+confound into a measured control that closes the question permanently. But
+**attach a magnitude estimate before calling a fix important**, and derive it
+from the data distribution rather than from the fact that a bug was real. One
+line — what fraction of items does this touch, and by how much — would have
+stopped the overclaim at the moment it was made rather than three retractions
+later.
+
+The general form: "there was a bug and we fixed it" says nothing about whether
+any number moved. Those are separate claims and the second one needs its own
+measurement.
