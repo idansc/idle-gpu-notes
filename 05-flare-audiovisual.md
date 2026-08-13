@@ -497,13 +497,68 @@ tolerance, and **any systematic same-sign pattern across cutoffs is a fail
 regardless of magnitude**, since that is the signature of truncation rather than
 noise.
 
-Our own ImageBind offset remains **unexplained and is labelled that way**. The
-obvious candidate was checked and ruled out: the ImageBind adapter passes no
-caps at all, so vision and audio go through separate upstream functions with
-separate defaults and there is no budget that can leak across modalities. What
-survives is decode-level (library versions, clip files), which does not change
-any ordering here — every claim in this note compares arms built from the *same*
-galleries, so a uniform offset moves them together.
+Our own ImageBind offset remains **unexplained** — but it is not uniform, and
+saying so corrects a claim I made here.
+
+**It scales with how much audio is in the score.** FLARE publishes a third
+ImageBind anchor we had not compared:
+
+| arm | published | ours | Δ |
+|---|---|---|---|
+| vision-only | 12.87 | 12.61 | −2.0% |
+| fused | 6.35 | 5.86 | −7.7% |
+| **audio-only** | **0.31** | **0.25** | **−19.4%** (≈−17% at R@5 and R@10 too) |
+
+So my earlier line — "a uniform offset moves all the arms together, orderings
+survive" — is **refuted by our own numbers**. The deficit is audio-correlated,
+which is precisely the axis every `w`-dependent quantity varies along. The
+direction is favourable: an under-represented audio channel pushes the optimal
+`w` *up* and the audio margin *down*, so the true optimum is likely below 0.87
+and audio's true contribution likely larger than +0.474. The claims survive and
+the numbers are **conservative** — worth stating out loud rather than leaving
+implicit.
+
+### The decode-budget explanation is falsified
+
+The natural account — upstream ImageBind samples `clips_per_video=3 × 2s ≈ 6s`
+of audio against `5 × 2s ≈ 10s` of video, so audio is truncated hard and video
+barely — predicts that audio-only should sit near its ceiling on short clips and
+degrade as clips lengthen. Two tests, no GPU:
+
+**Integrity.** Extracted wav duration versus the clip's own duration, n=600:
+median relative difference **+0.0000**, p05 −0.0002, p95 +0.0001, **0.0%**
+mismatched by more than 5%, all 16 kHz mono. So the audio corresponds exactly to
+the clip being retrieved — no boundary-alignment or span bug.
+
+**Mechanism.** R@1 stratified by gold-clip duration (all 53,580 resolved):
+
+| clip duration | n | audio-only | vision-only |
+|---|---|---|---|
+| 0–3s | 221 | 0.00% | 9.95% |
+| 3–6s | 21,352 | 0.22% | 13.14% |
+| 6–10s | 14,473 | 0.26% | 13.03% |
+| 10–15s | 7,997 | 0.28% | 12.05% |
+| 15–25s | 5,865 | 0.36% | 11.92% |
+| >25s | 3,672 | 0.22% | 10.35% |
+
+**Audio-only goes UP past the 6s budget, not down** — 0.22% under 6s versus
+0.27% over it, +26% relative, the opposite of the prediction. Vision-only drifts
+down 6.3%, consistent with longer clips simply being harder rather than with a
+10s budget biting. 60% of clips exceed 6s, so the budget had ample opportunity to
+show itself.
+
+Caveat kept because the counts are small: audio-only R@1 of 0.25% is ~130 hits
+across the whole set, so bucket-level differences are noisy. The direction is
+consistent across four buckets and is not the sharp degradation the hypothesis
+requires, which is enough to falsify it but not to explain the deficit.
+
+And the logical point that should have come first: FLARE's protocol is the
+official codebase at default configuration. **If the paper also ran defaults, the
+defaults cancel** and cannot produce a gap between us at all. A shared default is
+not a discrepancy.
+
+So the audio deficit stays open, with the two most attractive explanations —
+shared cap, and decode truncation — both measured and rejected.
 
 ## Which models collapse, and why: a published 2×2
 
