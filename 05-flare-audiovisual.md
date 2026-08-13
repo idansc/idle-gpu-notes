@@ -518,7 +518,7 @@ and audio's true contribution likely larger than +0.474. The claims survive and
 the numbers are **conservative** — worth stating out loud rather than leaving
 implicit.
 
-### The decode-budget explanation is falsified
+### The decode-budget explanation: no evidence, but not falsified
 
 The natural account — upstream ImageBind samples `clips_per_video=3 × 2s ≈ 6s`
 of audio against `5 × 2s ≈ 10s` of video, so audio is truncated hard and video
@@ -547,18 +547,36 @@ down 6.3%, consistent with longer clips simply being harder rather than with a
 10s budget biting. 60% of clips exceed 6s, so the budget had ample opportunity to
 show itself.
 
-Caveat kept because the counts are small: audio-only R@1 of 0.25% is ~130 hits
-across the whole set, so bucket-level differences are noisy. The direction is
-consistent across four buckets and is not the sharp degradation the hypothesis
-requires, which is enough to falsify it but not to explain the deficit.
+⚠️ **State this as "no evidence of a binding budget", not "falsified", because
+the profile carries a confound of the opposite sign.** Longer clips contain more
+audio content and are intrinsically more retrievable from audio; truncation would
+hurt exactly those clips. The observed rise is the *sum* of the two effects, and
+they can cancel. What is genuinely ruled out is that truncation **dominates** the
+profile — not that it is absent. Do not cite this table as showing decode budgets
+do not matter in general.
+
+The confound-free version, if it ever matters: re-encode one subsample at two
+budgets and compare the same clips to themselves. Not worth a GPU here, because
+of the logical point below.
+
+Second caveat, on power: audio-only R@1 of 0.25% is ~130 hits across the whole
+set, so bucket-level differences are noisy. The direction is consistent across
+four buckets and is not the sharp degradation the hypothesis requires.
 
 And the logical point that should have come first: FLARE's protocol is the
 official codebase at default configuration. **If the paper also ran defaults, the
 defaults cancel** and cannot produce a gap between us at all. A shared default is
 not a discrepancy.
 
-So the audio deficit stays open, with the two most attractive explanations —
-shared cap, and decode truncation — both measured and rejected.
+So the audio deficit stays open. Of the three attractive explanations, one is
+ruled out by inspection (no shared cap exists in the adapter), one by measurement
+(wav spans match their clips exactly), and one is ruled out *as an explanation of
+the gap* by logic rather than by data — a shared default cannot produce a
+discrepancy with a paper that used the same defaults, whatever the constants
+are.
+
+That is what an honest reproduction section looks like: the deficit is real,
+audio-correlated, biases our numbers conservatively, and is unexplained.
 
 ## Which models collapse, and why: a published 2×2
 
