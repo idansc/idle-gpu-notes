@@ -273,12 +273,41 @@ gap.** So the honest claim is neither the old null nor a win:
 > A query-conditioned weight is measurably better than any fixed one, and
 > recovers about 4% of the oracle gap.
 
-Why the family decides this, mechanistically: in the linear family the score is
-affine in `w`, so a per-query `w` only slides along a line and the head has
-nothing to exploit but noise. Renormalized, `w` also moves the *per-document*
-denominator, and that is where per-query structure lives. That denominator is
-the same term this note called "a small, order-dependent effect" earlier in the
-day. It now carries the only positive result on the board.
+**But +0.192 is not the finding — the flip is.** Whether a learned operator beats
+a fixed one is decided here by a modelling choice almost no paper reports: not
+the architecture, not the objective, not the data, but the operator *family* the
+comparison is embedded in. And the two families are not arbitrary alternatives —
+one is what the benchmark actually uses, the other is the one that is natural to
+write down. Two honest groups could run identical code on identical data and
+publish opposite conclusions about learned-vs-fixed operators.
+
+The bound makes it sharper still: **+4.68 is available, hand-specified structure
+gets ~0% of it (five groupings, none beating a global weight), a learned
+per-query head gets 4%, and the remaining 96% is unexplained.** So the structure
+is real, it is per-query, and it is not captured by any partition of queries we
+could specify by hand.
+
+Why the family decides this — and the version of this sentence I wrote first was
+wrong. I said the linear head "had nothing to exploit but noise". That cannot be
+right: the linear family has **+4.83** of oracle headroom against the
+renormalized family's **+4.68**. Essentially the same structure is present in
+both.
+
+What differs is not how much structure exists but **whether it is reachable from
+the query**. In the linear family the score is affine in `w`, so a per-query `w`
+only slides each document along a line and the reachable axis is one a linear
+head on the query embedding cannot predict. Renormalizing makes `w` also move
+the *per-document* denominator, and that axis is predictable. Same headroom,
+different accessibility.
+
+Stated generally, which is the part that ports:
+
+> **The operator family determines whether existing structure is reachable, not
+> whether it exists.**
+
+The denominator doing the work here is the same term this note called "a small,
+order-dependent effect" this morning. It now carries the only positive result on
+the board.
 
 **What survives unchanged**, all re-derived on the renormalized family: the decoy
 null (0.01), and every grouping arm (five of them, none beating a global weight).
