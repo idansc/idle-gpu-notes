@@ -20,7 +20,7 @@ varies. ImageBind, gallery 87,697 clips / 399 videos, zero missing records.
 
 **On queries built to require both modalities, `normalize((v+a)/2)` scores 5.86
 against 12.61 for vision alone — 2.15× worse.** ⚠️ **But the bar for any learned
-operator here is 12.81, not 5.86** — a single tuned scalar recovers the collapse
+operator here is 12.86, not 5.86** — a single tuned scalar recovers the collapse
 (see below). Never quote the 5.86 gap as available headroom. The vision-query control
 collapses the same way, 31.00 → 10.32.
 
@@ -38,16 +38,22 @@ cross-clip spectral cosine −0.004 (p95 0.308).
 Sweeping a fixed weight on the cached galleries (no GPU, no re-encoding),
 `s(w) = w·(q·v) + (1−w)·(q·a)`, same 53,580 unified queries:
 
-| w | 0.00 | 0.50 | 0.80 | 0.90 | **0.95** | 1.00 |
-|---|---|---|---|---|---|---|
-| R@1 | 0.25 | 5.00 | 11.60 | 12.80 | **12.81** | 12.61 |
+| w | 0.00 | 0.50 | 0.80 | 0.90 | **0.93** | 0.95 | 1.00 |
+|---|---|---|---|---|---|---|---|
+| R@1 | 0.25 | 5.00 | 11.60 | 12.80 | **12.86** | 12.81 | 12.61 |
 
-**One scalar recovers the whole 2.15× collapse** (5.00 → 12.81), and audio's
-genuine contribution at its optimum is **+0.20 R@1 over vision alone**.
+**One scalar recovers the whole 2.15× collapse** (5.00 → 12.86), and audio's
+genuine contribution at its optimum is **+0.25 R@1 over vision alone**.
 
 Replicated independently: a 5-fold **held-out** fit by a second line gives
-α\* = 0.95 and held-out R@1 **12.81** — same optimum, same value, and the
-held-out version rules out the grid sweep having overfit.
+α\* = 0.95 and held-out R@1 12.81 — same optimum, same value, so the sweep had
+not overfit.
+
+> **Correction (finer grid).** Both of us reported 0.95 → 12.81 because neither
+> grid contained 0.93. A 101-point grid, tuned on train folds and scored on the
+> held-out fold, picks **w = 0.93 → 12.86** in all 5 folds. Two independent
+> implementations agreeing to the decimal did **not** catch this: we shared the
+> blind spot, not the arithmetic. The bar is **12.86**.
 
 So the honest reading of the published ImageBind/LanguageBind collapses (2.5× and
 7.4×) is *equal weighting*, not "fusion is hard". A single tuned number fixes
@@ -57,12 +63,79 @@ built specifically so queries require both.
 This is the fifth null for "a learned reduction beats a hand-designed one", but
 with a new shape: here the hand-designed operator was **badly chosen** rather
 than near-optimal, and the repair is one scalar, not a learned function. Anyone
-proposing a learned fusion here must beat 12.81, not the 5.86 the literature
+proposing a learned fusion here must beat 12.86, not the 5.86 the literature
 reports.
 
 Scope: this is score-level fusion of two single-vector embeddings. A token-level
-or query-conditioned operator could in principle extract more, but the ceiling it
-would be chasing is audio's +0.20 marginal contribution at score level.
+operator could in principle extract more. A **query-conditioned** one cannot —
+that is now measured, below.
+
+## The per-query oracle is real, and unreachable
+
+If a learned operator is to beat one number, the best `w` has to differ per
+query. With two modalities that is exactly solvable, no sampling: the score is
+affine in `w`, so `s_d(w) = c_d + w·m_d`, and gold ranks first iff
+`(c_g − c_d) + w·(m_g − m_d) > 0` for every distractor. Each distractor is a
+half-line; the feasible set is one interval. Solving it exactly matters — on
+MultiVENT I published a "+1.69 hard ceiling" that was measuring my 64-sample
+Dirichlet sampler, not the ceiling.
+
+| | R@1 |
+|---|---|
+| vision only, w = 1.0 | 12.61 |
+| best global w, grid-tuned held out | **12.86** |
+| **per-query ORACLE w** | **18.50** |
+| decoy null (same math, random non-gold target) | **0.01** |
+
+**+5.64 points of genuine per-query headroom**, and it is not the freedom of one
+fitted parameter: asking the same question of a random non-gold clip succeeds
+0.01% of the time. Exact duplicates of the gold — the trap that made MultiVENT's
+LP read 99.7% — occur for 0.01% of queries here, so they change nothing. The
+feasible intervals are wide (median width 0.288), so this is not knife-edge
+precision either; 69% of them contain 0.95, and the other 31% want a different
+`w`.
+
+## But no function of the query finds it
+
+Linear head on the ImageBind query embedding, `w(q) = σ(x·θ + b)`, 5-fold
+**video-disjoint** CV (clips of one video are near-duplicates, so a random split
+leaks), evaluated on the full 87,697-clip gallery.
+
+Two design choices that decide whether this test is fair, both learned the hard
+way in the first attempt:
+
+1. *The objective must be the one you report.* A listwise-CE fit picked w = 0.84
+   (worth 12.24) where the top-1 optimum is 0.93 (worth 12.86). Under that proxy
+   the conditional arm "beat" the constant by +0.41 — an artifact of handicapping
+   the control. Refit both with a top-1 surrogate; the constant arm then lands at
+   12.84, i.e. it recovers the grid optimum, which is what says the harness is
+   sound.
+2. *Initialize the conditional arm AT the best constant.* `θ = 0` reproduces `w0`
+   exactly, so the head starts with a free pass and can only move if the query
+   says something.
+
+| | R@1 |
+|---|---|
+| learned constant `w` (held out) | 12.84 |
+| **learned `w(q)`** (held out) | **12.49** |
+| per-query oracle | 18.50 |
+
+**It moved and got worse.** ‖θ‖ = 7.9, `w(q)` spread 0.63–0.96 (sd 0.042) — the
+head did not collapse to its initialization, it fit the training folds and
+generalized 0.35 below the constant it started from. Of +5.64 available points,
+a query-conditioned weight recovers **−0.35**.
+
+So FLARE closes in the same shape as MultiVENT: **oracle-reachable,
+probe-unrecoverable.** Two benchmarks, two different reasons for the oracle gap
+to exist, one conclusion — the gap is a property of the answer key, not of the
+query. That is now the second data point, and it is the one that generalises:
+*an oracle ceiling is not a target unless something visible at inference time
+predicts it.*
+
+Caveats that bound this: linear probe on a single frozen query embedding, single
+seed, score-level only. A token-level operator, or one seeing the candidate as
+well as the query, is untested and is the remaining live option. Read it as
+"null at probe level".
 
 **Calibration.** The paper's query-based Table 3 has no ImageBind vision-only row
 — the single ImageBind row is the *fused* variant at 6.35/16.59/23.09. Our fused
@@ -230,13 +303,13 @@ Text→media R@1 / R@10 / MedianRank, unified queries (n=53,580) unless noted:
 |---|---|---|---|
 | vision-only | 12.61 | 38.57 | 23 |
 | incumbent fusion (normalized-vector mean) | 5.86 | 21.25 | 95 |
-| **best fixed weight, w = 0.95** | **12.81** | — | — |
+| **best fixed weight, w = 0.93** | **12.86** | — | — |
 | audio-only | 0.25 | 1.65 | 3356 |
 | score-mean | 5.00 | 18.84 | 122 |
 | per-item max | 9.73 | 31.42 | 42 |
 | per-item min | 2.09 | 7.86 | 1254 |
 | calibrated (z) min | 2.46 | 9.73 | 651 |
-| best fixed α, VIDEO-LEVEL HOLDOUT | 12.81 | 39.07 | 22 |
+| best fixed α, VIDEO-LEVEL HOLDOUT (α grid lacked 0.93) | 12.81 | 39.07 | 22 |
 
 α* = 0.95 on every one of five source-video folds — the tuned scalar is
 vision-plus-a-whisper and ties vision-only, exactly the pre-registered branch:
@@ -249,7 +322,7 @@ Qwen3-VL-Emb-8B 60.82).
 The asymmetry that is the mechanism: the same average RESCUES audio queries
 (0.12 → 0.97 R@1, 8×, n=135,003) while destroying vision queries (31.00 →
 10.32, 3.0×) and the bimodal-constraint queries (12.61 → 5.86, 2.15×) — both
-repaired by one scalar to 12.81. One
+repaired by one scalar to 12.86. One
 line of algebra says why: the normalized-mean score is
 (q·v + q·a) / sqrt(2 + 2 v·a); measured cos(v,a) = 0.25 ± 0.12 compresses
 vision margins by ~0.63× while q·a (sd 0.075, pure noise here) reorders the
