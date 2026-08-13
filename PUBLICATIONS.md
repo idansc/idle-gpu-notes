@@ -305,11 +305,27 @@ sharding supplied; and (iii) all of it was read as current when the file name
 said otherwise. A stale artifact answers every question you ask it, in the
 present tense.
 
-Harness agreement with the paper: fused 5.86 vs published 6.35 (−7.7%); the
-controlled vision-vs-fused contrast is NEW — the paper never ran it
-query-based. Venue: ICASSP 2027 (submission 2026-09-16); the one-scalar repair
-plus the unlearnability result is the 4-pager's spine, with the operator
-question scoped to live-channel substrates (WAVE, once its dtype cast and its OOM are both fixed).
+**Retracted novelty claim.** This entry previously said the controlled
+vision-vs-fused contrast was new and that the paper never ran it query-based.
+False: FLARE's Table 4 carries both sides for every V+A model, and the collapse
+was visible in the published appendix the whole time. Read the appendix before
+claiming novelty.
+
+What that leaves is a better harness check and a narrower contribution. Our arms
+reproduce BOTH published sides: fused 5.86 vs 6.35 (−7.7%), vision-only 12.61 vs
+12.87 (−2.0%) — two-sided agreement inside 8%. Note both deviations are
+NEGATIVE, so they read as a small systematic offset rather than noise; worth
+locating, and worth remembering when the WAVE arms are gated against their own
+published anchors.
+
+The contribution is therefore not the observation but the explanation, the
+repair, and the bound on repairing further — and the 4-pager should lead with
+the last of those, since it is the only one a reviewer cannot find in the
+benchmark's own appendix: the per-query optimum is worth a further +4.83 on the
+grid, it is null-controlled, and neither a learned head nor eight visible
+groupings recover any of it. Venue: ICASSP 2027 (submission 2026-09-16), with
+the operator question scoped to live-channel substrates (WAVE, once its dtype
+cast and its OOM are both fixed).
 Caveats: linear probe, single frozen query embedding, single seed, score-level
 only — token-level and candidate-aware operators are untested and remain the
 live option.
