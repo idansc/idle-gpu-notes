@@ -159,6 +159,24 @@ anchor to test, not as a measured trend.
 
 ### FLARE: audio-visual fusion collapses are a missing hyperparameter — and the per-query fix is unlearnable
 
+> ⚠️ **FAMILY ERROR UNDER REPAIR (2026-08-13, mid-flight).** Every number in this
+> entry with a `w` attached was computed on the LINEAR family
+> `w·(q·v) + (1−w)·(q·a)`. The incumbent is `q · normalize(w·v + (1−w)·a)`, and
+> the two coincide only at w=0 and w=1. On the incumbent's own family the best
+> fixed operator is **13.09 at w=0.90**, not the ~12.8 linear plateau, and
+> audio's margin over vision-only roughly doubles (+0.48 vs +0.254, CI pending).
+> The repair story gets STRONGER — 5.86 → 13.09 is +7.23 from changing one
+> number inside the operator the field already uses, no operator change at all —
+> but the ceiling numbers below (oracle 18.50, grid oracle 17.69, probe 12.49,
+> the eight groupings, and the "+4.83 available" figure this entry leads with)
+> are all linear-family and are NOT comparable to a 13.09 bar until re-derived.
+> Note also that the exact oracle's affine-in-`w` precondition FAILS on the
+> renormalized family: the per-document denominator does not cancel, so a
+> re-derivation must either change solver or be labelled a grid oracle. Treat
+> every `w`-dependent figure here as provisional until the matched-family run
+> lands.
+
+
 **What we found:** on the first benchmark whose queries require BOTH vision and
 audio (FLARE, [2605.10228](https://arxiv.org/abs/2605.10228)), the standard
 fusion — average of L2-normalized embeddings, the recipe FLARE itself calls
