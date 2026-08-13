@@ -907,3 +907,50 @@ value reads high. Single split +0.192 → five-partition mean +0.159; the first
 grid's argmax, the first fold's optimum and the first bootstrap's interval all
 went the same way. Whatever you measured once, measure under a second
 configuration before quoting it.
+
+## The aggregate is more stable than the retrieval it summarizes
+
+Chasing a 0.19-point gap against a published anchor, we asked how much of it a
+pure numeric difference could produce. Same embeddings, same gallery, same
+20,000 queries; the only change was running the score matmul in bf16 instead of
+fp32:
+
+```
+R@1 fp32 = 7.4200
+R@1 bf16 = 7.3150      delta = -0.105
+top-1 retrieved item CHANGES for 10.1% of queries
+```
+
+Ten percent of the retrieval churns and the metric moves by a tenth of a point,
+because most flips swap two distractors and never touch the gold. Two things
+follow, and they point in opposite directions.
+
+**R@1 is robust, and comparisons across configurations still are not.** The
+margin distribution explains both: rank1 − rank2 has p1 = 4.8e-5, p5 = 2.3e-4,
+p25 = 1.4e-3, so a perturbation of ε flips roughly the queries with margin below
+ε. At ε ≈ 1e-3 that is 19% of the population, against effects of interest worth
+0.19–0.47 points — 100 to 250 queries out of 53,580. The at-risk population is an
+order of magnitude larger than the effect. So any comparison against a published
+number, or across boxes, kernels, precisions or a library upgrade, carries a
+floor of this size, and a harness gate built on it can catch a truncated input
+but cannot resolve tenths.
+
+**Within-run contrasts are protected, and the warning must not be over-applied.**
+Arms that share embeddings and differ only in a swept parameter see the
+perturbation as common-mode: it moves both arms nearly identically and cancels in
+the difference. Same-config differences stay interpretable at 0.1 points; levels
+compared across configurations do not.
+
+**Per-item artefacts are an order of magnitude more fragile than the metric over
+them.** Oracle picks, per-query win/loss tables, flip sets and the qualitative
+examples that go in a paper all live at the item level, where 10% churn is the
+operative number rather than 0.1 points. Source them from the same run they are
+argued about, never from a re-run.
+
+⚠️ One trap in doing this: a bf16 matmul establishes the transfer function
+(ε → ΔR@1), not the size of the perturbation you are attributing to. Reading
+"numeric noise explains my gap" off it requires knowing your actual ε, and
+kernel-vs-kernel differences can be anywhere from 1e-5 to 1e-3 — which map to
+R@1 movements of 0.005 and 0.105 respectively. Measure ε directly (re-encode with
+a different batch composition; accumulation order changes, nothing else does) and
+read the predicted churn off the margin CDF.
