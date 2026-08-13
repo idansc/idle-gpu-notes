@@ -107,6 +107,20 @@ When a run is anchored on a predicted value, re-check that the prediction is
 still current immediately before reading the result -- the interval between
 writing a control and running it is where landmarks go stale.
 
+## Sweep the operator the benchmark actually uses
+
+A fusion sweep ran for a full day on `w*(q.v) + (1-w)*(q.a)` while the incumbent
+was `q . normalize(w*v + (1-w)*a)`. The two families agree at w=0 and w=1 -- so
+both endpoints reproduced, every calibration check passed, and the whole middle
+of the curve was a different operator. It cost a wrong bar (12.86 vs 13.12) and
+an audio margin that was half its real size (+0.254 vs +0.474).
+
+Endpoint agreement is not family agreement. Before sweeping a hyperparameter of
+an operator, write the incumbent's formula out and check your parameterization
+reduces to it at the incumbent's setting -- here, at w=0.5 the linear family
+gives 5.00 where the incumbent gives 5.86, which was visible in the table the
+whole time and read as an interesting side result instead of a red flag.
+
 ## Agreement between two lines is not replication
 
 Two sessions independently found FLARE's best fusion weight at w=0.95 -> 12.81,

@@ -42,9 +42,25 @@ Sweeping a fixed weight on the cached galleries (no GPU, no re-encoding),
 |---|---|---|---|---|---|---|---|
 | R@1 | 0.25 | 5.00 | 11.60 | 12.80 | **12.86** | 12.81 | 12.61 |
 
-**One scalar recovers the whole 2.15× collapse** (5.00 → ~12.8). Audio's genuine
-contribution is **+0.19 to +0.25 R@1 over vision alone** — real, and
-**significant but tiny**.
+**One scalar recovers the whole collapse: 5.86 → 13.12, +7.26 points, without
+leaving the operator the benchmark already uses.** Audio's genuine contribution
+is **+0.474 R@1 over vision alone**, nested 95% CI [+0.271, +0.664].
+
+> ⚠️ **Family correction — read before quoting any number below.** The incumbent
+> is `q · normalize(w·v + (1−w)·a)`. Every sweep in the original version of this
+> note was the **linear** family `w·(q·v) + (1−w)·(q·a)`, which agrees with it
+> only at w = 0 and w = 1. That made three published numbers wrong:
+>
+> | | linear (what I swept) | renormalized (the real family) |
+> |---|---|---|
+> | best fixed w | 0.93 | **0.87** |
+> | bar | 12.86 | **13.12** |
+> | audio margin over vision-only | +0.254 [+0.063, +0.386] | **+0.474 [+0.271, +0.664]** |
+>
+> The bar is **13.12**, not the ~12.8 plateau I circulated. Audio's margin
+> roughly **doubles** and moves clearly away from zero, so "significant but
+> tiny" is too weak — half a point is small, not negligible. Sections below that
+> still quote linear-family numbers are marked.
 
 That range is deliberate. Quoting the *peak's* advantage (+0.25, paired CI
 [+0.11, +0.40]) inherits the selection, because w = 0.93 is the argmax of the
@@ -59,7 +75,10 @@ is markedly more fragile:
 
 Every point on the plateau beats vision-only with a CI excluding zero.
 
-**The headline number is the nested one: +0.254, 95% CI [+0.063, +0.386].**
+**The headline number is the nested one, on the renormalized family: +0.474,
+95% CI [+0.271, +0.664].** (The +0.254 [+0.063, +0.386] below is the same
+procedure on the linear family — kept because the method discussion is about the
+procedure, not the operator.)
 Rather than argue about which fixed `w` to quote, remove the selection: for each
 held-out fold, pick `w` on the *other* folds and take the difference against
 vision-only inside that fold. No grid-resolution argument, no round-number
@@ -167,6 +186,18 @@ What survives is simpler and blunter: **the operator's failure is that it adds a
 noise channel at equal weight.** That is why one scalar repairs it, and it is why
 the repair is a weight rather than a better normalizer.
 
+> **Correction to the justification, not the conclusion.** "The repair is a
+> weight" survives and is stronger than stated: within the incumbent's *own*
+> family, moving w from 0.5 to 0.87 goes 5.86 → 13.12. But I justified it by
+> calling the normalizer a small, order-dependent term, and that is wrong. Swept
+> across w, renormalizing **helps everywhere audio carries real weight** —
+> +0.86 at w=0.5, **+1.68 at w=0.7**, +0.29 at w=0.9, decaying to 0 at w=1 where
+> the families coincide. Dropping it costs you. The incumbent's failure was the
+> weight alone; its normalizer was never the problem.
+>
+> The order-dependence I found earlier was real but was a two-point artefact of
+> comparing families at a single w. The full curve settles it.
+
 ## The per-query oracle is real, and unreachable
 
 If a learned operator is to beat one number, the best `w` has to differ per
@@ -181,9 +212,18 @@ Dirichlet sampler, not the ceiling.
 |---|---|
 | vision only, w = 1.0 | 12.61 |
 | best global w, grid-tuned held out | **12.86** |
-| **per-query ORACLE w, continuous** | **18.50** |
-| per-query oracle restricted to the 11-point grid | 17.69 |
+| **per-query ORACLE w, continuous** *(linear family)* | **18.50** |
+| per-query oracle restricted to the 11-point grid *(linear)* | 17.69 |
+| per-query oracle on the renormalized family, 23-point grid | 17.76 |
 | decoy null (same math, random non-gold target) | **0.01** |
+
+⚠️ **Family note:** the oracle, probe and grouping results in this section were
+computed on the **linear** family, so they pair with the 12.86 bar, not 13.12.
+The renormalized oracle is 17.76, essentially unchanged, which is why the
+qualitative null is expected to hold — the nulls are about whether `w` is
+predictable per query, not about the denominator. "Expected" is not "measured",
+and re-deriving the probe on the renormalized family is the one loose end left
+on this benchmark.
 
 ⚠️ Two oracles, and they answer different questions. **18.50** is the geometry
 claim: some real `w` exists. **17.69** is the ceiling for anything choosing from
