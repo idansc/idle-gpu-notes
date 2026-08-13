@@ -12,6 +12,14 @@ Assembly drafts live in `papers/`.
 
 ### 1. "Oracle headroom" can be an illusion
 
+> ⚠️ **PROVISIONAL — computed over 4 of 5 channels.** The MultiVENT sweep drops
+> `sims[..., 0]` on a comment asserting it is padding; it is not. Slice 0 scores
+> R@1 20.15% alone (chance 0.066%) and holds 47.3% of doc tokens. So max 57.43,
+> the learned arms and the 89.3% LP reachability are all computed on a subset
+> that excludes the second-strongest channel. The bound over the wrong channel
+> set is the wrong bound. Re-run pending cluster access; see note 04.
+
+
 **What we found:** for 9 of 10 MultiVENT queries, SOME weighting of the four
 channel scores would rank the right video first (89.3%, vs 0.8% for a random
 decoy) — but a model trained to produce that weighting from the query alone

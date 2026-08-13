@@ -1,45 +1,58 @@
 # 04 — MultiVENT 2.0 / CLaMR: finding a benchmark with genuinely multimodal items
 
-> ## ⚠️ UNDER VERIFICATION — the channel count is disputed
+> ## ⚠️ THE LADDER DROPPED A REAL CHANNEL — every number below is under revision
 >
-> **Every number in this note may be computed over 4 of 5 slices.** Not yet
-> resolved; my cluster access is down. Recorded now because these numbers are the
-> comparison target for work in other lanes.
->
-> The dumped tensor is `[1504, 1504, 5]`, and our sweep carries an explicit,
-> load-bearing assumption at `reduce_sweep.py:32`:
+> **The sweep computes over 4 of the 5 slices, and the dropped one is not
+> padding.** `reduce_sweep.py:32` carries an explicit, load-bearing assumption:
 >
 > ```python
 > # channel 0 is padding (M = max(modality_id)+1, ids are 1..4); drop it.
 > sims = sims[..., 1:]
 > ```
 >
-> **Two lines have reported incompatible readings of `mod_ids`**, and I have
-> verified neither:
-> - one reports distinct values `[-100, 0, 1, 2, 3, 4]` — `-100` is the ignore
->   index and `0` is a real modality holding 47.3% of document tokens, so our
->   sweep dropped the largest channel;
-> - the other reports four content ids plus padding, which is what the code
->   assumes, and adds that the slice indexing and the id indexing may not
->   correspond at all.
+> That comment is wrong. Measured on `sims[..., 0]` by the critic line:
 >
-> Both cannot be right. One correction to how this reached me: the at-risk slice
-> is index **0**, the one the code drops — not the "slice 4" whose strength
-> prompted the question. Slice 4 was inside our four all along.
+> | | |
+> |---|---|
+> | min / mean / max | +6.47 / +10.79 / +22.01 — finite, same scale as the other four |
+> | R@1 using slice 0 **alone** | **20.15%**, against chance of 0.066% (1/1504) |
+> | tokens with `mod_id == 0` | 1,280,646 = **47.3%** of all doc tokens, 851.5/doc, in 99.4% of docs |
+> | `torch.unique(mod_ids)` | `[-100, 0, 1, 2, 3, 4]` |
 >
-> **Resolution is one check**: is `sims[..., 0]` finite and non-degenerate, and
-> does slice *k* contain the tokens whose `mod_id` is *k*? If slice 0 is padding
-> the note stands unchanged; if it is real, every number here is recomputed
-> before anything is built on it.
+> **Padding does not score 300× chance.** And `-100` appearing alongside `0`
+> settles the id question: `-100` is the ignore value, which leaves `0` as a
+> content id. Slice 0 is the *second*-strongest single channel in the tensor.
 >
-> **Tie convention, which I can attest to**, since it is the other free parameter
-> being raised: this ladder does not use torchmetrics. `reduce_sweep.py` ranks
-> with `torch.argsort(..., descending=True, stable=True)` and locates the gold by
-> its position in that order, so ties resolve by **index order** — neither
-> gold-first nor gold-last. That choice was deliberate and is documented in the
-> file: the optimistic `(score > gold).sum()` convention counts ties as
-> not-ahead and inflated max to **85.63** against the true **57.63**. Any arm
-> compared against 57.43 must use the same function, not a different convention.
+> Note the score-level evidence stands independently of whether slice *k* holds
+> the tokens whose `mod_id` is *k*. Whatever slice 0 is, it carries strong signal
+> and the sweep discards it; the correspondence question decides what to *call*
+> the channel, not whether dropping it was safe.
+>
+> **What is not yet known is the cost.** The comparison that quantifies it —
+> max over slices 1–4 (what this ladder actually feeds) versus max over all five
+> — has not been run; both lines lost cluster access mid-check. Published
+> neighbours for scale, on a different metric so not directly comparable to
+> 57.43: max over 0–3 = 21.54, max over all five = 24.14.
+>
+> Until that runs, treat **57.43, 56.23, 59.12 and the 89.3% LP reachability as
+> provisional**. The relative ordering may well survive — every arm was fed the
+> same four slices — but the max baseline is a max over a subset, and an oracle
+> bound computed over the wrong channel set is the wrong bound.
+>
+> One correction to how this was first reported to me: the at-risk slice is index
+> **0**, the one the code drops — not the "slice 4" whose strength prompted the
+> question. Slice 4 was inside the four all along, so findings about slice 4's
+> strength describe this ladder's *input*, not something it excluded.
+>
+> **Tie convention**, since it is the other free parameter in play: this ladder
+> does not use torchmetrics. `reduce_sweep.py` ranks with
+> `torch.argsort(..., descending=True, stable=True)` and locates the gold by its
+> position, so ties resolve by **index order** — neither gold-first nor
+> gold-last. Deliberate, and documented in the file: the optimistic
+> `(score > gold).sum()` convention counts ties as not-ahead and inflated max to
+> **85.63** against the true **57.63**. Any arm compared against these numbers
+> must call the same ranker, or the tie convention becomes a free parameter
+> worth more than the effect being chased.
 
 
 **Status: reproduced at 57.63 (published 58.47), then abandoned. Every operator
