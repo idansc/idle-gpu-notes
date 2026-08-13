@@ -83,6 +83,30 @@ confirmation overstates the evidence. (We did exactly that for a few hours.)
 For real confirmation, rebuild the floor at a second budget and require the two
 corrections to agree.
 
+## Precision is not significance
+
+A grid too coarse to contain the optimum gave the wrong answer (w=0.95 -> 12.81).
+Refining it gave a sharper wrong answer: w=0.93 -> 12.86, published as a
+correction, when a paired bootstrap puts 0.93 vs 0.95 at +0.049 with CI
+[-0.028, +0.123]. A denser grid buys resolution, not significance.
+
+Before reporting an argmax as a finding, test it against its neighbours on the
+same items. If the curve is flat, report the plateau. And note the argmax's
+advantage over a baseline inherits the selection -- quote the plateau's WORST
+endpoint, not the peak's: here the peak claimed +0.25 [+0.11, +0.40] while the
+selection-free floor was +0.019 [+0.017, +0.373].
+
+## A run can be correct while its sentence is wrong
+
+A control measured exactly what it should have and was then described using a
+retracted model, because the expected value had been withdrawn after the script
+was written. The number was right, the framing around it was not, and the framing
+is what a reader takes away.
+
+When a run is anchored on a predicted value, re-check that the prediction is
+still current immediately before reading the result -- the interval between
+writing a control and running it is where landmarks go stale.
+
 ## Agreement between two lines is not replication
 
 Two sessions independently found FLARE's best fusion weight at w=0.95 -> 12.81,
