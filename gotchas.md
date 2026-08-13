@@ -651,3 +651,28 @@ answered a question about *identity* — same bytes? same process? same run? —
 consulting a proxy that was cheap to read, and each proxy failed toward the
 confident answer rather than toward an error. Including, twice, the proxy
 brought in to check the previous proxy.
+
+## Overlapping marginal CIs are not evidence of no difference
+
+A tuned fusion weight scored 12.86 with a bootstrap CI of [12.59, 13.15]. The
+baseline it had to beat — drop the second channel entirely — sits at 12.61,
+comfortably inside that interval. Read as "indistinguishable", the tuning result
+would have been retracted.
+
+Both arms score the **same 53,580 queries**, so almost all of the marginal width
+is shared query difficulty, which cancels in the difference. The paired
+bootstrap over the per-query difference gives **+0.254, CI [+0.110, +0.394]** —
+excludes zero. The comparison that overlapped by 0.5 points resolves at 0.14.
+
+Whenever two arms consume identical items, the marginal intervals answer a
+question nobody asked ("how well is this arm known in absolute terms") and are
+systematically too wide for the question that matters. Bootstrap the paired
+difference and quote that interval; the same applies to seed-to-seed spread,
+which is why a paired design beats two independent runs.
+
+The converse trap sits one step later: **a difference measured at the argmax of
+the same data inherits the selection.** Quoting the peak's advantage over a
+baseline is optimistically biased even when the tuning was fold-wise. When the
+curve is a plateau, report the plateau's MINIMUM advantage — here "every w in
+[0.90, 0.95] beats the baseline by +0.19 to +0.25" — which costs nothing, is
+selection-free, and still excludes zero.
