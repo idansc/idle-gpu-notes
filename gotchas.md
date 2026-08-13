@@ -351,3 +351,107 @@ into the output records so the question is answerable after the fact:
 rec["env"] = {"transformers": transformers.__version__,
               "torch": torch.__version__, "model_class": arch}
 ```
+
+## Moving inputs to the device is not the same as casting them
+
+Three WAVE-7B retrieval arms ran overnight, exited clean, and wrote a complete
+769 MB `text.pt` each. Every one had an empty `results/`. 1596 clips failed in one
+arm, 399 in each of the others, all with:
+
+```
+clip encode failed: Input type (torch.FloatTensor) and weight type (torch.cuda.HalfTensor)
+```
+
+The adapter's `_move_inputs` moved tensors and stopped there:
+
+```python
+def _move_inputs(self, inputs: dict) -> dict:        # WAVEAdapter
+    ...
+    elif isinstance(value, torch.Tensor):
+        moved[key] = value.to(self.device)           # device only
+```
+
+while the generic adapter twenty lines up in the same file does the other half:
+
+```python
+value = value.to(self.device)
+if torch.is_floating_point(value):
+    value = value.to(_wd)                            # _wd = model param dtype
+```
+
+What makes this expensive is *which* half of the pipeline it spares. Text
+encoding passes, because its tensors are token ids and attention masks —
+integers, with no dtype to mismatch. Only the float payload (pixels, waveforms)
+hits the fp16 weights. So the run produces a large, correct-looking text side and
+a silently empty media side, and the arm that looks furthest along is the one
+that has computed nothing.
+
+Two rules. Any `to(device)` on model inputs needs a dtype clause derived from the
+model itself — `next(self.model.parameters()).dtype` — never a hardcoded half.
+And a tensor left on the CPU shows up as `torch.FloatTensor`, not
+`torch.cuda.FloatTensor`; that prefix tells you whether you are looking at a
+missed cast or a missed move. Here it was a key deliberately passed through
+unmoved, which the error named precisely if you read the type and not just the
+mismatch.
+
+The second half of the failure is the one that reaches a table. Each clip died
+inside a per-item `except` that appended to `errors.txt` and continued, so the
+job exited 0. If anything downstream scores a missing gallery entry as "not
+retrieved" rather than "not computed", an empty run becomes a *low number*
+instead of a crash — and a depressed row against a baseline you are trying to
+beat is exactly the result nobody double-checks. Assert the count before scoring,
+in the scoring code, not the encoder:
+
+```python
+assert len(results) == len(gallery_ids), \
+    f"{len(gallery_ids) - len(results)} items never encoded — refusing to score"
+```
+
+Companion to *A guarded fallback reports the guard's message*: that one masks
+which failure happened, this one masks that anything failed at all.
+
+## An orphaned job outlives the ssh session that launched it
+
+A VPN drop killed the ssh sessions driving mm-lab01. One eval process kept
+running with `ppid 1`, adopted by init; from outside it looked as dead as the
+terminal that started it. Someone relaunched. Fourteen hours later two processes
+were walking the same video list into the same output directory with
+byte-identical arguments — same `--run_name`, same `--exp_dir`, both
+`--num_chunks 1 --chunk_idx 0`, so no sharding kept them apart. Concurrent
+writers that both pass a skip-if-exists check can produce a torn `.pt`, which is
+the failure mode that loads without complaint.
+
+Every connection drop manufactures one of these, so the guard belongs in the
+launcher rather than in anyone's memory:
+
+```bash
+pgrep -f "run_name $ARM" >/dev/null && { echo "$ARM already running"; exit 0; }
+```
+
+Two diagnostic corrections came out of it. **Age does not identify the
+duplicate.** The instinct is to kill the younger process; here the younger one
+came from the *newer, fixed* launcher (`eval_run_pinned.sh`, Aug 12) while the
+survivor was started by the older script, so killing by recency would have kept
+the stale run and destroyed the good one. Provenance comes from `ppid` and the
+launcher, never from start time. **And `ps` truncates the command line** before
+the argument that names the arm, so the whole duplication is invisible in `ps`
+output — the identity is in `/proc/PID/cmdline`, NUL-separated:
+
+```bash
+tr '\0' ' ' < /proc/$PID/cmdline; echo
+```
+
+## A flag accepted without error is not a flag honored
+
+A session was launched with `--remote-control` in print mode, reported nothing
+unusual, and then failed to appear as a peer. That absence was read as evidence
+the feature did not do what we thought. It wasn't: print mode ignores the flag
+outright — no connection, no warning, no non-zero exit. Driven from a real TTY
+the same binary announced "/remote-control is active".
+
+The cost is not the wasted launch, it is the false negative it produced. A
+feature that silently no-ops returns exactly the observation you would get from a
+feature that works and disproves your hypothesis, and a null result is the thing
+we are least inclined to re-test. Before you believe a negative, confirm the
+feature *announced itself* — a banner, a log line, a status call — not merely
+that the process started and the flag was accepted.
