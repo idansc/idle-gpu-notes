@@ -43,8 +43,23 @@ Sweeping a fixed weight on the cached galleries (no GPU, no re-encoding),
 | R@1 | 0.25 | 5.00 | 11.60 | 12.80 | **12.86** | 12.81 | 12.61 |
 
 **One scalar recovers the whole 2.15× collapse** (5.00 → ~12.8). Audio's genuine
-contribution at the optimum is **+0.25 R@1 over vision alone** — small, but a
-paired bootstrap puts it at [+0.11, +0.39], so it is real.
+contribution is **+0.19 to +0.25 R@1 over vision alone** — real, and
+**significant but tiny**.
+
+That range is deliberate. Quoting the *peak's* advantage (+0.25, paired CI
+[+0.11, +0.40]) inherits the selection, because w = 0.93 is the argmax of the
+same data. The selection-free statement is the plateau's worst endpoint, and it
+is markedly more fragile:
+
+| against vision-only (w = 1.0) | Δ R@1 | paired 95% CI |
+|---|---|---|
+| w = 0.90 | +0.194 | [+0.017, +0.373] |
+| w = 0.93 (argmax) | +0.254 | [+0.112, +0.398] |
+| w = 0.95 | +0.205 | [+0.088, +0.321] |
+
+Every point on the plateau beats vision-only with a CI excluding zero, but the
+weakest floor is **+0.017** — above zero and barely. Anyone quoting the argmax's
+interval is overstating what this benchmark supports.
 
 Replicated independently: a 5-fold **held-out** fit by a second line gives
 α\* = 0.95 and held-out R@1 12.81 — same optimum, same value, so the sweep had
@@ -145,8 +160,15 @@ Dirichlet sampler, not the ceiling.
 |---|---|
 | vision only, w = 1.0 | 12.61 |
 | best global w, grid-tuned held out | **12.86** |
-| **per-query ORACLE w** | **18.50** |
+| **per-query ORACLE w, continuous** | **18.50** |
+| per-query oracle restricted to the 11-point grid | 17.69 |
 | decoy null (same math, random non-gold target) | **0.01** |
+
+⚠️ Two oracles, and they answer different questions. **18.50** is the geometry
+claim: some real `w` exists. **17.69** is the ceiling for anything choosing from
+the grid, and it is the one to compare the grid-restricted arms against —
+subtracting 12.86 from 18.50 credits those methods with +5.64 when only +4.83 was
+ever reachable by them.
 
 **+5.64 points of genuine per-query headroom**, and it is not the freedom of one
 fitted parameter: asking the same question of a random non-gold clip succeeds
@@ -216,15 +238,39 @@ below.
 | per-group `w`, sound-word count 0 / 1 / 2+ | 12.86 |
 | per-query oracle restricted to the grid | 17.69 |
 
-**+0.01, against an available +4.83 within the same grid.** The structure is
-real — the groups *do* select different weights — and it is worthless.
+**+0.01, against an available +4.83 within the same grid.**
 
-Two honest limits on this. The direction is backwards: queries with **no** sound
-word prefer w = 0.90 (*more* audio), sound-mentioning ones prefer 0.93. And the
-split is 48,576 vs 5,004, since 90.7% of unified queries mention sound at all.
-Both say the lexical proxy is not capturing audio-relevance. So this rules out
-*this* grouping, not every grouping — though note a better grouping could only
-help, and the ceiling it would be chasing is the +4.83 grid oracle.
+But this proxy is bad evidence on its own, and the reason is visible in its own
+output: the direction is backwards — queries with **no** sound word prefer
+w = 0.90 (*more* audio) — and the split is 48,576 vs 5,004, since 90.7% of
+unified queries mention sound at all. A feature anti-correlated with the thing it
+is named for may have failed because it does not measure audio-relevance, not
+because audio-relevance is unhelpful.
+
+So the lexical test alone would only license "unrecoverable by *this* proxy".
+The general claim needs a grouping not derived from words at all.
+
+### Groupings with no semantics in them
+
+Bin queries by their own retrieval statistics — all visible at inference, no
+lexicon, no training. `max_d q·v` is how confidently vision retrieves anything;
+`max_d q·a − max_d q·v` is the score-space analogue of "is this query audio-ish".
+
+| grouping (held out, exact) | R@1 | Δ vs one global `w` |
+|---|---|---|
+| one global `w` | 12.86 | — |
+| `max q·v`, 2 / 5 / 10 bins | 12.86 / 12.82 / 12.75 | +0.00 / −0.04 / −0.12 |
+| `max q·a`, 5 bins | 12.75 | −0.11 |
+| audio affinity, 2 / 5 / 10 bins | 12.83 / 12.81 / 12.83 | −0.03 / −0.05 / −0.04 |
+| **per-query oracle, restricted to grid** | **17.69** | **+4.83** |
+
+**Seven groupings, not one beats a single global number, and most are worse.**
+Every one of them *does* select different weights per bin — the picks span
+0.85–1.00 — and finer binning makes held-out performance *degrade*, which is the
+signature of a per-group argmax that fits its bin and does not transfer.
+
+That is the shape of the whole result in miniature: the structure is there, and
+it does not survive being asked to predict.
 
 One scope error is worth naming, because it is the natural objection: the screen
 shows averaging *rescuing* audio-targeted queries (0.12 → 0.97) while *destroying*
