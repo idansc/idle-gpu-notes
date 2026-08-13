@@ -159,22 +159,21 @@ anchor to test, not as a measured trend.
 
 ### FLARE: audio-visual fusion collapses are a missing hyperparameter — and the per-query fix is unlearnable
 
-> ⚠️ **FAMILY ERROR UNDER REPAIR (2026-08-13, mid-flight).** Every number in this
-> entry with a `w` attached was computed on the LINEAR family
-> `w·(q·v) + (1−w)·(q·a)`. The incumbent is `q · normalize(w·v + (1−w)·a)`, and
-> the two coincide only at w=0 and w=1. On the incumbent's own family the best
-> fixed operator is **13.09 at w=0.90**, not the ~12.8 linear plateau, and
-> audio's margin over vision-only roughly doubles (+0.48 vs +0.254, CI pending).
-> The repair story gets STRONGER — 5.86 → 13.09 is +7.23 from changing one
-> number inside the operator the field already uses, no operator change at all —
-> but the ceiling numbers below (oracle 18.50, grid oracle 17.69, probe 12.49,
-> the eight groupings, and the "+4.83 available" figure this entry leads with)
-> are all linear-family and are NOT comparable to a 13.09 bar until re-derived.
-> Note also that the exact oracle's affine-in-`w` precondition FAILS on the
-> renormalized family: the per-document denominator does not cancel, so a
-> re-derivation must either change solver or be labelled a grid oracle. Treat
-> every `w`-dependent figure here as provisional until the matched-family run
-> lands.
+> ⚠️ **FAMILY ERROR, CORRECTED — two items still open.** Numbers with a `w`
+> attached were originally computed on the LINEAR family
+> `w·(q·v) + (1−w)·(q·a)`, while the incumbent is `q · normalize(w·v + (1−w)·a)`.
+> The two coincide only at w=0 and w=1, so both endpoints reproduced and every
+> calibration check passed while the entire middle of the curve was a different
+> operator. Re-derived on the incumbent's own family: best fixed operator
+> **≈13.1 (plateau w ≈ 0.87–0.90)**, not the ~12.8 linear plateau; audio's
+> nested selection-free margin **+0.474, 95% CI [+0.271, +0.664]**, roughly
+> double the linear family's +0.254; grid oracle **17.76**, headroom +4.64.
+> Drop 12.81, 12.86 and ~12.8 wherever they appear — all were optima of a
+> family the benchmark does not use. STILL OPEN: the probe null (12.49) and the
+> eight groupings are linear-family and pair with a bar that no longer exists,
+> and the decoy null has not been re-run on this family, so the 17.76 oracle
+> currently has no matched null. Treat the unlearnability claim as provisional
+> until both land.
 
 
 **What we found:** on the first benchmark whose queries require BOTH vision and
@@ -339,9 +338,9 @@ published anchors.
 The contribution is therefore not the observation but the explanation, the
 repair, and the bound on repairing further — and the 4-pager should lead with
 the last of those, since it is the only one a reviewer cannot find in the
-benchmark's own appendix: the per-query optimum is worth a further +4.83 on the
-grid, it is null-controlled, and neither a learned head nor eight visible
-groupings recover any of it. Venue: ICASSP 2027 (submission 2026-09-16), with
+benchmark's own appendix: the per-query optimum is worth a further +4.64 on the
+grid, and neither a learned head nor eight visible groupings recover any of it —
+subject to the two re-derivations named in the warning above. Venue: ICASSP 2027 (submission 2026-09-16), with
 the operator question scoped to live-channel substrates (WAVE, once its dtype
 cast and its OOM are both fixed).
 Caveats: linear probe, single frozen query embedding, single seed, score-level
