@@ -245,7 +245,53 @@ feasible intervals are wide (median width 0.288), so this is not knife-edge
 precision either; 69% of them contain 0.95, and the other 31% want a different
 `w`.
 
-## But no function of the query finds it
+## ⚠️ RETRACTED on the correct family: a function of the query DOES find some of it
+
+**Everything in this section was computed on the linear family.** Re-run on the
+renormalized family — the operator the benchmark actually uses — the result
+reverses:
+
+| | linear family | **renormalized family** |
+|---|---|---|
+| learned constant `w` (held out) | 12.84 | 13.08 |
+| **learned `w(q)`** (held out) | 12.49 | **13.28** |
+| `w(q)` − const, paired | **−0.349** [−0.485, −0.211] | **+0.192** [+0.093, +0.289] |
+
+Same code, same video-disjoint folds, same top-1 surrogate, same
+initialize-at-the-best-constant free pass. Only the operator changed, and the
+sign of the headline flipped from significantly worse to significantly better.
+
+Two checks that this is a real reversal and not a bug. The held-out constant
+lands at 13.08 by two independent routes — this fit's 51-point pool-proxy
+selection, and the nested grid run's margin (+0.474 over vision-only 12.61 =
+13.08). And `w(q)` at 13.28 also beats the best *fixed* grid point, 13.12, so it
+is not merely beating a poorly-chosen constant.
+
+**What it actually recovers: +0.192 of +4.68 available, i.e. 4.1% of the oracle
+gap.** So the honest claim is neither the old null nor a win:
+
+> A query-conditioned weight is measurably better than any fixed one, and
+> recovers about 4% of the oracle gap.
+
+Why the family decides this, mechanistically: in the linear family the score is
+affine in `w`, so a per-query `w` only slides along a line and the head has
+nothing to exploit but noise. Renormalized, `w` also moves the *per-document*
+denominator, and that is where per-query structure lives. That denominator is
+the same term this note called "a small, order-dependent effect" earlier in the
+day. It now carries the only positive result on the board.
+
+**What survives unchanged**, all re-derived on the renormalized family: the decoy
+null (0.01), and every grouping arm (five of them, none beating a global weight).
+So *group*-unrecoverable holds; it is specifically **per-query** conditioning
+that works, and only on the family whose denominator varies per document.
+
+---
+
+*(Original linear-family section below, kept because the two design rules in it —
+fit with the metric you report, and initialize the conditional arm at the best
+constant — are what make either result trustworthy.)*
+
+## The linear-family version: no function of the query finds it
 
 Linear head on the ImageBind query embedding, `w(q) = σ(x·θ + b)`, 5-fold
 **video-disjoint** CV (clips of one video are near-duplicates, so a random split
