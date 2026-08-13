@@ -799,3 +799,35 @@ step contributes no variance.
 Any interval around a tuned quantity has to include the tuning. The tell that
 you have it wrong is comfort: an interval that does not widen when you add a
 selection step is an interval that never modelled the selection.
+## A tolerance built from an unexplained discrepancy is not a tolerance
+
+An arm was gated against a published anchor of 7.58. We set the pass band at
+7.0–7.6, reasoning that another reproduction on the same benchmark ran 2–8%
+below its published values, so this one probably would too. The arm returned
+**7.39** — inside the band, and wrong. It had been fed 32 seconds of audio where
+the protocol wants 64.
+
+The band was built out of a discrepancy nobody had explained. That is the whole
+error: an unexplained offset is not a known noise level, and using it to widen a
+gate converts the gate into a device that accepts the thing it was built to
+catch. Every additional unexplained result makes the band wider and the gate
+weaker, which is exactly backwards.
+
+Two rules that survive it:
+
+- **A tolerance comes from the expected size of harness noise** — decode
+  nondeterminism, seed spread, tie handling — not from the size of an
+  unexplained gap you are already carrying.
+- **A systematic same-signed pattern is a failure at any magnitude.** 7.39 vs
+  7.58 undershoots at R@1, R@5 and R@10 together, 2–4% each. Noise does not
+  agree on a direction three times. A genuinely broken tower, for contrast, reads
+  like 1.65 against 12.87 — the near-miss is the informative case, and the only
+  one a published anchor can catch.
+
+Corollary, from the same investigation: check whether the discrepancy is
+*uniform* before assuming it cancels. The same reproduction was −2.0% on
+vision-only media, −7.7% fused, and −19.4% audio-only — monotone in audio
+content, i.e. an audio-path deficit rather than a level shift. "It shifts every
+arm together, so orderings are preserved" was the natural assumption and its own
+numbers refuted it. A discrepancy correlated with the axis your headline varies
+along is a bias in the headline, not a constant.
