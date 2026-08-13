@@ -864,3 +864,46 @@ Two habits:
 The same blind spot lives in every "cosine ≈ 1.0 so the mirror is intact" check.
 Ours read on embeddings of width 3584; the floor moves with dtype and dimension,
 which is exactly why it has to be measured rather than assumed.
+
+## Audit the object, not just the estimate
+
+The most expensive error in this file was not caught by any of the checks above,
+and it survived a full day during which two lines audited the result repeatedly.
+
+The claim was "no learned per-query operator beats a well-chosen fixed one" —
+measured at −0.349 with a paired CI excluding zero, on a head initialized at the
+best constant so that standing still was free. Over that day it was checked for
+selection bias, for grid resolution, for seed stability, for fold-partition
+stability, for objective/metric mismatch, for multiplicity, and for whether a
+per-group weight could reach what the per-query head could not. Every one of
+those audits was about **the estimate**. None of them asked what was being
+estimated.
+
+The sweep was running `w·(q·v) + (1−w)·(q·a)`. The incumbent operator is
+`q · normalize(w·v + (1−w)·a)`. Re-measured on the family the benchmark actually
+uses, the same code with the same folds gives **+0.159** — significantly
+*better*, not worse. The headline null was an artifact of a modelling choice
+nobody had written down, and no amount of rigour applied to the number could
+have found it, because the number was computed correctly throughout.
+
+Two habits, and the first is nearly free:
+
+- Before auditing a result, **write down the object**: the exact formula the
+  baseline computes, the exact population the metric averages over, the exact
+  set the max ranges over. One line, in the note, next to the number. Most
+  family errors die on contact with being written out.
+- Notice that **statistical rigour is not a defence against this**. Confidence
+  intervals, nested selection and partition checks all condition on the object
+  being right; they get sharper as the object gets wronger, and a tight CI on the
+  wrong quantity is more persuasive than a loose one.
+
+The tell, in hindsight, was endpoint agreement (see *Sweep the operator the
+benchmark actually uses*) — but the general lesson is broader than fusion
+operators. Any time a comparison is embedded in a parameterization, the
+parameterization is a claim, and it is the one claim nobody thinks to check.
+
+Corollary observed on the same benchmark, four times: a single-configuration
+value reads high. Single split +0.192 → five-partition mean +0.159; the first
+grid's argmax, the first fold's optimum and the first bootstrap's interval all
+went the same way. Whatever you measured once, measure under a second
+configuration before quoting it.
