@@ -157,36 +157,97 @@ anchor to test, not as a measured trend.
 
 ## Pending — expected to reach this bar
 
-### FLARE fusion screen (grid running)
+### FLARE: audio-visual fusion collapses are a missing hyperparameter — and the per-query fix is unlearnable
 
-FLARE ([2605.10228](https://arxiv.org/abs/2605.10228)) is the first benchmark
-whose queries REQUIRE two modalities, and where the incumbent fusion — average
-pooling of L2-normalized embeddings, the "standard late-fusion practice" in
-FLARE's own words, over ImageBind
-([2305.05665](https://arxiv.org/abs/2305.05665)) / LanguageBind
-([2310.01852](https://arxiv.org/abs/2310.01852)) — costs some models 2.5–7×
-rather than 2 points. First completed runs: ImageBind's audio channel is
-near-dead on user-style queries (R@10 = 1.65% on an 87,697-clip gallery), with
-the pipeline exonerated end-to-end (its own demo pairs and real FLARE clips
-align 5/5 with wide margins), and replicated cross-hardware (mm-lab01 mirror:
-R@10 1.655 vs cluster 1.652). If confirmed, the field's default fusion averages
-in a dead channel, and the operator question moves to strong-audio substrates.
+**What we found:** on the first benchmark whose queries require BOTH vision and
+audio (FLARE, [2605.10228](https://arxiv.org/abs/2605.10228)), the standard
+fusion — average of L2-normalized embeddings, the recipe FLARE itself calls
+"standard late-fusion practice" — HALVES ImageBind's performance on a fixed
+query set (R@1 12.61 vision-only → 5.86 fused, 2.15×; 3.0× on vision-targeted
+queries). One scalar repairs it: weighting vision at 0.93 recovers 12.86
+(101-point grid, 5-fold video-disjoint, tuned on train folds and scored held
+out, same optimum in all 5). Audio's true marginal contribution at score level
+is +0.25 — not the 6.75-point hole the collapse appears to leave.
 
-**Venue check (2026-08-11): ICASSP 2027, submission 2026-09-16 (~5 weeks).**
-Novelty verdict: the OBSERVATION (audio weak on FLARE) is in the FLARE paper
-itself ("audio-language alignment remains a key bottleneck"), and audio-text
-query-robustness is an active lane — Omni-Embed-Audio
-([2604.18360](https://arxiv.org/html/2604.18360)) reports CLAP "collapse
-ratios" by query formulation, and Robust Audio-Text Retrieval
-([2604.23323](https://arxiv.org/html/2604.23323v1)) hardens the same. What is
-NOT taken and shapes the 4-pager: the dead-CHANNEL audit for audio-VISUAL
-retrieval — alive-vs-aligned distinction with pipeline exoneration, the
-fusion-damage mechanism (averaging in a dead channel destroys a healthy one),
-cross-hardware replication, and substrate-conditional recovery on strong-audio
-encoders (WAVE-7B / Qwen-Omni, staged). Position against both papers above and
-against FLARE's own bottleneck sentence, or a reviewer will. Gate to commit:
-vision/unified rows + one strong-audio contrast must land first (in flight,
-same week).
+Then the ceiling. A per-query oracle that picks the best weight for each query
+separately reaches 18.50, a genuine +5.64 over the best constant, computed
+EXACTLY rather than sampled (with two modalities the score is affine in w, so
+each distractor is a half-line and the feasible set is a single interval). It
+is null-controlled: the same procedure aimed at random non-gold targets
+harvests 0.01, and only 0.01% of queries have an exact duplicate of the gold.
+But it is not reachable. A linear head on the query embedding, initialized AT
+the best constant so that doing nothing was a free pass, instead drifted
+(‖θ‖=7.9, w spread 0.63–0.96) and generalized BELOW its own initialization:
+12.49 held out, recovering −0.35 of the +5.64.
+
+**Why it matters:** two claims, both actionable. First, the incumbent is not
+near-optimal (ViDoRe-style) but BADLY CHOSEN — deployments using mean fusion
+pay the measured 2.15–3.0× for a missing hyperparameter with a one-line fix.
+Second, FLARE closes in MultiVENT's shape — oracle-reachable,
+probe-unrecoverable — making it our second data point for the general lesson
+that an oracle ceiling is not a target unless something visible at inference
+time predicts it. One open tension before that line can stand as stated: our
+own free-ride result shows fusion moves vision-targeted and audio-targeted
+queries in OPPOSITE directions, and query type is not hidden at inference, so a
+2–3 parameter per-group weight is the obvious thing the linear probe should
+have found and did not. That test is minutes and is pending; if a per-group
+weight recovers a meaningful share of the +5.64, "probe-unrecoverable" narrows
+to "this probe, this parameterization". The audit (fixed-query/varied-media screen + per-channel
+operator rows + dead-channel instrument outcomes, note 05) ports to any AV
+retrieval stack.
+
+**Mechanism — one measured fact, one open split.** Measured and solid: the same
+averaging that halves vision-targeted queries RESCUES audio-targeted ones 8×
+(0.12 → 0.97). That free-ride asymmetry is the load-bearing evidence, and it
+rests on which queries move, not on any score algebra.
+
+The score algebra we previously offered was WRONG and is retracted. We wrote
+that normalized-mean score = (q·v + q·a)/√(2+2·v·a) with measured
+cos(v,a)=0.25 gives "0.63× margin compression", predicting
+12.61 × 0.6325 = 7.98 against 5.86 observed. R@1 is invariant to any positive
+rescaling of all scores for a query, and computing 0.63 from the MEAN cos(v,a)
+treats the divisor as a global constant — under exactly that assumption its
+effect on R@1 is ZERO, not −37%. The prediction and the assumption used to
+derive it are incompatible, so there is no 7.98 anchor and no 0.735 residual to
+explain. Compression is real for margins and irrelevant for ranks.
+
+Rebuilt, only two things can move R@1 here: (a) the injected q·a term, and
+(b) HETEROGENEITY of v_i·a_i across gallery items — items whose vision and
+audio agree shrink less and float up past items where they disagree. One gap,
+12.61 → 5.86, to split two ways. The pending control (set q·a = 0, RETAIN the
+per-item √(2+2·v_i·a_i)) isolates (b) exactly: if heterogeneity is negligible
+it returns ≈12.61, and whatever falls below 12.61 is the (b) term with the
+remainder to 5.86 being (a). A return near 12.61 is the cleanest version of
+this story — averaging a dead channel is pure injected noise, no normalization
+narrative required. Cheap design: score gold plus a fixed random 10k-item
+gallery subset under all three conditions (vision-only, fused, q·a=0) on the
+identical subset; absolute R@1 shifts but the three-way split is preserved at
+~9× less compute than the full 53,580 × 87,697 pass. This should land before
+venue selection; until it does, the split is UNMEASURED and the entry does not
+claim a derived mechanism.
+
+**Two corrections we carry rather than bury.** Our earlier "12.81 at w=0.95,
+found independently twice" was a SHARED BLIND SPOT: two sweeps agreed because
+neither grid contained 0.93, so the agreement was one measurement run twice,
+not a cross-check. Treat identical numbers from a shared pipeline as a
+reproduction until the inputs are shown disjoint. And the WAVE-7B contrast is
+NOT running: all three arms wrote a complete text.pt but produced zero gallery
+results. Counted per arm (2026-08-13), the failures are NOT one cause —
+maudio 1596 errors all dtype/0 OOM, munified 399 all dtype/0 OOM, mvision 399
+all OOM/0 dtype. So two arms are blocked on the missing fp16 cast in
+WAVEAdapter._move_inputs and one on memory; tuning batch size would leave two
+thirds of the work failing identically. (Our own first reading of this said
+"all three OOM" after sampling a single arm's log — the same generalize-from-one
+error as the shared-grid mistake above, one level down.)
+
+Harness agreement with the paper: fused 5.86 vs published 6.35 (−7.7%); the
+controlled vision-vs-fused contrast is NEW — the paper never ran it
+query-based. Venue: ICASSP 2027 (submission 2026-09-16); the one-scalar repair
+plus the unlearnability result is the 4-pager's spine, with the operator
+question scoped to live-channel substrates (WAVE, once its OOM is fixed).
+Caveats: linear probe, single frozen query embedding, single seed, score-level
+only — token-level and candidate-aware operators are untested and remain the
+live option.
 
 ### Imaginability audit (H3 line, design locked)
 
