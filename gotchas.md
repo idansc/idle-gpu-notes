@@ -1071,6 +1071,53 @@ The general form: "there was a bug and we fixed it" says nothing about whether
 any number moved. Those are separate claims and the second one needs its own
 measurement.
 
+## Four failures in one day, one shape: measuring a proxy that cannot express the state you care about
+
+Each of these was found and fixed separately. They are one entry because the
+fix for each is the same question, and asking it costs nothing.
+
+**Cosine on identical data.** A control compared two embedding sets and reported
+min per-query cosine `0.999998`, read as ~1e-6 run-to-run nondeterminism. The two
+tensors were **bitwise identical** — `torch.equal` true — and
+`cosine_similarity` still returns `0.99999827` on fp32 embeddings of width 3584
+with row norms in `0.999999–1.000001`. That value is the comparator's floor, not
+a measurement. The control could not fail in the regime it was screening, and
+the tolerance derived from it would have dismissed a genuine 5e-6 difference as
+noise.
+
+**`pgrep` matching its own command line.** A wait-loop polled
+`pgrep -f complete_retrieval` until zero. The polling shell's own `bash -c`
+cmdline contained that string, so the count never reached zero and the loop
+waited its full timeout while the GPUs sat idle. Bracket the pattern
+(`[c]omplete_retrieval`) *and* keep the literal string out of the same command.
+
+**A liveness check watching the wrapper.** Killing runs by wrapper name left the
+python workers orphaned, because the workers' cmdlines do not contain the
+wrapper's name; and checking the wrapper's liveness reported "healthy" for runs
+whose workers had already died. Verify the process that does the work, and
+verify progress (shard counts growing) rather than existence.
+
+**Free GPU memory read as ownership.** A GPU map was inferred from
+`memory.used`, concluding four cards were free and one was idle. The map was
+exactly inverted: those cards held four live workers, and the "idle" one was
+between clips at 0% utilisation. Broadcast to three peers, it would have put a
+new job on top of a running arm — and co-residency on those same cards had
+already cost 14 videos to CUDA OOM on allocations as small as 128 MiB. Query by
+**process owner**, not by free memory or utilisation.
+
+The common form: each check substituted something cheap and observable for the
+property actually in question — similarity for identity, a process name for a
+process, a name for the work it does, free memory for ownership. Three of the
+four could not have returned the answer that would have falsified them.
+
+**The habit that fixes all four in one line: calibrate the check on a case whose
+answer you already know.** Run the identity check on a byte-for-byte copy. Run
+the pgrep with nothing running. Ask what the liveness check says about a process
+you just killed. Ask what the GPU query says about a card you know is yours. If
+the check cannot fail on the known case, it is not measuring what you think, and
+you have learned that for the cost of one command instead of one wrong
+conclusion.
+
 ## Monotonicity of a quantity does not transfer to an estimate of it
 
 A ladder over 4 channels turned out to have discarded a real 5th. The question

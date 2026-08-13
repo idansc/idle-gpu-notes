@@ -578,6 +578,89 @@ are.
 That is what an honest reproduction section looks like: the deficit is real,
 audio-correlated, biases our numbers conservatively, and is unexplained.
 
+## The WAVE contrast: measured
+
+Both single-modality arms are complete at 399/399 videos, 53,580 queries, on the
+released evaluation code at the 64-frame protocol default.
+
+| arm | published | ours | Δ | Δ relative |
+|---|---|---|---|---|
+| vision-only R@1 | 16.80 | **16.5995** | −0.200 | −1.19% |
+| vision-only R@5 | 37.54 | 36.8664 | −0.674 | −1.80% |
+| vision-only R@10 | 47.92 | 47.3591 | −0.561 | −1.17% |
+| audio-only R@1 | 7.58 | **7.4057** | −0.174 | −2.30% |
+| audio-only R@5 | 18.41 | 17.8163 | −0.594 | −3.23% |
+| audio-only R@10 | 24.80 | 23.9978 | −0.802 | −3.23% |
+
+The harness gate passes on the corrected rule: no same-sign truncation
+signature beyond what the deficit already carries, and the audio arm landed at
+7.4057 inside a pre-registered 7.39–7.45.
+
+**The deficit is real at depth and is not numeric.** This is worth separating
+from the rank-1 story, because at R@1 alone it looks explainable and is not.
+Measured on this exact data, changing *only* the scoring precision from fp32 to
+bf16 — identical embeddings — moves R@1 by −0.105 (audio) and −0.095 (vision),
+and reorders the top-1 result for 10.1% and 8.7% of queries. So both R@1 gaps
+sit at roughly two units of that floor. But the same perturbation costs
+**nothing** at deeper cutoffs: ΔR@5 of +0.040 / −0.040 and ΔR@10 of +0.050 /
++0.055, i.e. sign-unstable noise. The observed R@5 and R@10 deficits are −0.59
+to −0.80, ten to twenty times the floor.
+
+A numeric account therefore explains R@1 and explains nothing below it. Writing
+"reproduces within numeric reproducibility" would have been wrong, and it is
+what I had written before checking every cutoff.
+
+**What was eliminated, by measurement rather than argument.** The frame/segment
+budget (a 32-vs-64 control on the same gallery: +0.015 at R@1); clip boundary
+alignment (extracted audio and extracted video agree to 11 ms median, 30 ms
+worst, across 250 clips, all 16 kHz mono); tie structure (0.000% of queries have
+rank-1 and rank-2 exactly equal — FLARE is not MultiVENT); the attention rewrite
+(bitwise identical to the stock masked path for single-segment inputs, which is
+every audio clip); the query prompt and `max_pixels` (both upstream, introduced
+in the initial code release, so common-mode with the anchor); and the BEATs
+tower (the snapshot ships zero `beats.*` tensors, so the bundled checkpoint is
+the sole and correct source).
+
+Checkpoint identity, which the reproduction section previously could not state:
+`tsinghua-ee/WAVE-7B` at revision `7d51cdaecfaabb9c529a447249cd4c2a6df8ce5b`.
+
+**One deviation remains and it is a hardware consequence, not a protocol
+choice.** The adapter hardcodes `attn_implementation="sdpa"`, upstream — so the
+published numbers did *not* come from WAVE's flash-attention training default.
+Stock masked SDPA hands a `[1, n, n]` mask to the kernel, which forces the math
+backend and materialises `num_heads · n²` scores: a single 47 GiB allocation on
+a 44 GiB card. Attending per `cu_seqlens` segment with no mask is the same
+arithmetic in 19 GB. This is consistent with the authors running 80 GB cards,
+where the allocation simply fits.
+
+What is left for the deep-rank deficit contains nothing we chose: locally
+extracted media, weights relative to whatever the paper actually ran (no
+revision is published), or non-attention numerics.
+
+**Fusion, provisional.** The tuned scalar sweep over WAVE's own vision-only and
+audio-only embeddings peaks near `w ≈ 0.65` at R@1 ≈ 20.9. That clears the
+pre-registered "below 29.7" decisively. It is provisional in two ways: it is the
+linear family only, and on ImageBind the renormalized family beat linear at the
+optimum and flipped a probe's sign, so treat 20.9 as a lower bound; and the
+comparison should be made against our own joint row, not the published 42.63,
+since cross-configuration levels carry the floor above while same-configuration
+contrasts over shared embeddings do not.
+
+Report the gain, not the level. Both routes start from vision-only at 16.60, and
+fusion does not get credit for a baseline it never had to earn:
+
+| route | R@1 | buys over best single channel |
+|---|---|---|
+| tuned late fusion | ~20.9 | +4.3 |
+| native joint encoding | 42.63 | +26.0 |
+
+**Late fusion recovers about 16.5% of the joint-encoding gain**, not the ~49%
+that 20.9/42.63 suggests. A linear operator over frozen unimodal embeddings
+captures roughly a sixth of what joint encoding achieves on a substrate where
+both channels are alive — which is the operator-route-versus-encoder-route
+question answered against the linear operator, and answered on published anchors
+at both ends.
+
 ## Which models collapse, and why: a published 2×2
 
 The same table answers a question the note had been treating as open. Table 4,
