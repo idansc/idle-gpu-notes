@@ -449,13 +449,32 @@ both ends rather than against our own numbers. Reaching 42.63 would instead mean
 late fusion is fine whenever both channels are alive, and the entire ImageBind
 story reduces to one dead channel plus one bad weight.
 
-**Harness gate, with its tolerance fixed in advance.** The audio arm finishes
-first and must reproduce the published 7.58 before anything downstream is
-trusted. Our two ImageBind deviations are **both negative** (fused −7.7%,
-vision-only −2.0%), which reads as a small systematic offset rather than noise —
-most likely preprocessing (frame budget, clip sampling, resolution). So the gate
-is **7.0–7.6**, not 7.58 exactly. Deciding that now means a −4% result is a pass
-rather than an argument.
+**Harness gate — and the gate I first wrote was already too loose.** The audio
+arm must reproduce the published 7.58 before anything downstream is trusted. I
+originally set the band at **7.0–7.6**, widened to accommodate our own
+unexplained ImageBind offset (fused −7.7%, vision-only −2.0%, both negative).
+
+The first WAVE audio arm came in at **7.39 — inside that band, and wrong**: a
+shared per-clip frame budget was subsampling audio second-offsets to 32s where
+the protocol wants 64. A 2–4% same-signed undershoot at every cutoff, which the
+band would have passed as "harness validated" and fed straight into the fusion
+rows where audio is one of two inputs.
+
+**The lesson is about how tolerances get set.** A gate should be sized by the
+expected magnitude of harness noise, not by an offset you already carry and
+cannot explain — widening it to cover your own unknown is exactly how a gate
+stops being a gate. Corrected rule: the published value plus a stated decode
+tolerance, and **any systematic same-sign pattern across cutoffs is a fail
+regardless of magnitude**, since that is the signature of truncation rather than
+noise.
+
+Our own ImageBind offset remains **unexplained and is labelled that way**. The
+obvious candidate was checked and ruled out: the ImageBind adapter passes no
+caps at all, so vision and audio go through separate upstream functions with
+separate defaults and there is no budget that can leak across modalities. What
+survives is decode-level (library versions, clip files), which does not change
+any ordering here — every claim in this note compares arms built from the *same*
+galleries, so a uniform offset moves them together.
 
 ## Which models collapse, and why: a published 2×2
 
