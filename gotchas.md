@@ -1117,3 +1117,39 @@ you just killed. Ask what the GPU query says about a card you know is yours. If
 the check cannot fail on the known case, it is not measuring what you think, and
 you have learned that for the cost of one command instead of one wrong
 conclusion.
+
+## Monotonicity of a quantity does not transfer to an estimate of it
+
+A ladder over 4 channels turned out to have discarded a real 5th. Which published
+numbers were at risk? Containment settles part of it cleanly: the 5-channel
+linear family contains the 4-channel one (set the new weight to zero), so any
+query whose gold was reachable stays reachable, and the per-query optimum can
+only rise. The LP reachability figure is therefore a lower bound and cannot be
+overturned by restoring the channel.
+
+The same argument was then applied to the oracle combiner — and it is wrong
+there, for a reason worth keeping. That number was not the exact optimum. It was
+a **64-sample Dirichlet estimate** of it. Sixty-four draws cover a 5-simplex
+worse than a 4-simplex, so the ESTIMATE can fall while the true optimum rises.
+Containment is a property of the object; the sampler carries its own
+dimension-dependent bias, and here the two move in opposite directions.
+
+Before applying any structural argument — monotonicity, containment, symmetry —
+check whether it holds of the quantity or of the number you actually have. A
+fixed-budget estimator of a monotone quantity is not monotone.
+
+## A retraction that leaves the number in a table is not a retraction
+
+The oracle combiner above had already been retracted once, on exactly the grounds
+that it measured a 64-draw sampler rather than a ceiling. The retraction was
+written in prose. The number stayed in the ladder table.
+
+It was then quoted as a bound by two people on the same day — including inside a
+spec written to test whether that bound was family-relative, which is an entire
+experiment premised on a number nobody was entitled to use. Tables are where
+people read numbers from; prose is where they read caveats, and the two are not
+consulted with equal frequency.
+
+Strike the value where it is typeset — delete the row, or replace the figure with
+`RETRACTED` and a pointer. If it still appears as a number beside its peers, it is
+still in circulation whatever the surrounding paragraph says.
