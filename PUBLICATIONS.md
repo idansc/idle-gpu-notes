@@ -248,15 +248,19 @@ say: **the operator's failure is that it adds a noise channel at equal weight.**
 That is why a scalar repairs it, and why the repair is a WEIGHT rather than a
 better normalizer. Measured cos(v,a) = 0.247 ± 0.120.
 
-**One run still open.** The 2–3 parameter per-group weight, testing query-side
-structure: owned by the line that ran the oracle, minutes on cached artifacts,
-no GPU. It is INDEPENDENT of the control just reported — (b) is heterogeneity
-across GALLERY items, the per-group weight is structure across QUERIES, and
-neither constrains the other. The measured (b)=1.96 does not bound it: audio is
-noise for vision-targeted queries and signal for audio-targeted ones, so the
-optimal w still differs sharply by group and the full +5.64 remains on the
-table. This run gates how strongly the "probe-unrecoverable" line can be
-stated, and should land before venue selection.
+**The per-group weight is now run too, and it is also null — which is what
+promotes "probe-unrecoverable" from a probe artifact to a claim.** The obvious
+objection to a failed linear probe is that query TYPE is visible at inference
+and moves the two groups oppositely, so a 2–3 parameter per-group weight should
+walk away with the headroom. It does not. Beyond a lexical proxy (+0.01), seven
+NON-SEMANTIC groupings — binning queries by their own retrieval statistics with
+no lexicon: max q·v (2/5/10 bins), max q·a (5 bins), audio affinity q·a − q·v
+(2/5/10 bins) — score +0.00, −0.04, −0.12, −0.11, −0.03, −0.05, −0.04 against a
+single global w, versus +4.83 available on the grid. None beats one number,
+most are worse, and FINER BINNING DEGRADES held-out performance: a per-group
+argmax fits its bin and does not transfer. So the ceiling resists both a
+learned per-query head and hand-specified per-group structure, on the axis
+where our own free-ride result says the signal must live.
 
 **Corrections we carry rather than bury.** Our "12.81 at w=0.95, found
 independently twice" was a SHARED BLIND SPOT: two sweeps agreed because neither
@@ -267,15 +271,26 @@ same family: "12.86 at w=0.93" quoted an argmax whose lead over 0.95 is
 +0.049, CI [−0.028, +0.123], i.e. indistinguishable from zero. A denser grid
 buys resolution, not significance; the honest object is the plateau, and the
 test that separates them is a paired bootstrap, which is what promoted audio's
-+0.25 (CI [+0.11, +0.39]) from claim to result. And the WAVE-7B contrast is
-NOT running: all three arms wrote a complete text.pt but produced zero gallery
-results. Counted per arm (2026-08-13), the failures are NOT one cause —
-maudio 1596 errors all dtype/0 OOM, munified 399 all dtype/0 OOM, mvision 399
-all OOM/0 dtype. So two arms are blocked on the missing fp16 cast in
-WAVEAdapter._move_inputs and one on memory; tuning batch size would leave two
-thirds of the work failing identically. (Our own first reading of this said
-"all three OOM" after sampling a single arm's log — the same generalize-from-one
-error as the shared-grid mistake above, one level down.)
++0.25 (CI [+0.11, +0.39]) from claim to result.
+
+**WAVE-7B status, and a log that outran three readings of it.** The contrast is
+RUNNING as of 2026-08-13 12:48 — four sharded gallery workers, results
+climbing from zero — after an SDPA fix plus 4-way sharding. Every earlier
+statement in this ledger about WAVE described a run that no longer exists, and
+the tell was in the filename: the error log we all quoted is
+`errors_preSDPAfix.txt`, i.e. explicitly marked superseded. Three readings of
+it went wrong in three different ways, worth recording because they are
+independent failure modes: (i) we first reported "all three arms OOM" from
+sampling ONE arm's log, when the true split is maudio 1596 dtype/0 OOM,
+munified 399 dtype/0 OOM, mvision 399 OOM/0 dtype — two arms were a missing
+fp16 cast in `WAVEAdapter._move_inputs`, not memory; (ii) we then quoted
+"allocations up to 22.34 GiB" from four sampled lines, when the actual
+distribution over 399 OOM lines is min 2.60 / median 18.46 / MAX 47.27 GiB,
+with 45 attempts requesting MORE THAN THE ENTIRE 44.39 GiB CARD — those can
+never be fixed by freeing memory and needed a structural split, which is what
+sharding supplied; and (iii) all of it was read as current when the file name
+said otherwise. A stale artifact answers every question you ask it, in the
+present tense.
 
 Harness agreement with the paper: fused 5.86 vs published 6.35 (−7.7%); the
 controlled vision-vs-fused contrast is NEW — the paper never ran it
