@@ -568,7 +568,37 @@ GPU compute apps, or output counts that should be advancing:
 pgrep -u "$USER" -f '[c]omplete_retrieval_pipeline'
 ```
 
-The family resemblance is worth more than the three instances: each check
+**And the bracket trick is not sufficient on its own** — this is the fourth
+instance, and the most instructive, because here the *mitigation* failed toward
+the confident answer. Verifying the phantom, the second line's bracketed pattern
+still returned 1:
+
+```bash
+pgrep -u "$USER" -f complete_retrieval_pipeline   | wc -l   # self-matching
+pgrep -u "$USER" -f '[c]omplete_retrieval_pipeline' | wc -l # "safe" — also 1
+```
+
+The idiom keeps the literal string out of the *pattern*, not out of the
+**command line**. Running both checks in one invocation — or adding an
+`echo "checking complete_retrieval_pipeline"` label — puts the unbracketed
+string back into the searching shell's own cmdline, where the bracketed pattern
+happily matches it. The target string must appear nowhere else in the
+invocation: one check per command, no echo labels naming the target.
+
+Then pass `-a`, so a phantom prints its own command line instead of a bare
+count. A count cannot distinguish "found a worker" from "found myself"; a
+listing shows the ssh line immediately. The same tell caught it from the other
+side — a phantom pid with `etime 00:00` carrying `--encode_gallery`,
+`--encode_text_chunk`, `--merge_gallery` and `--calc_metrics` simultaneously,
+which no real worker ever does.
+
+Best of all, cross-check liveness against whether the **outputs are advancing**.
+Result counts identical across two readings minutes apart settles it
+independently of any process listing, and would have been right in every one of
+the four cases above.
+
+The family resemblance is worth more than the four instances: each check
 answered a question about *identity* — same bytes? same process? same run? — by
 consulting a proxy that was cheap to read, and each proxy failed toward the
-confident answer rather than toward an error.
+confident answer rather than toward an error. Including, twice, the proxy
+brought in to check the previous proxy.
