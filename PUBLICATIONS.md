@@ -157,34 +157,66 @@ anchor to test, not as a measured trend.
 
 ## Pending — expected to reach this bar
 
-### FLARE: the field's audio-visual fusion collapses are a missing hyperparameter
+### FLARE: audio-visual fusion collapses are a missing hyperparameter — and the per-query fix is unlearnable
 
 **What we found:** on the first benchmark whose queries require BOTH vision and
 audio (FLARE, [2605.10228](https://arxiv.org/abs/2605.10228)), the standard
 fusion — average of L2-normalized embeddings, the recipe FLARE itself calls
 "standard late-fusion practice" — HALVES ImageBind's performance on a fixed
 query set (R@1 12.61 vision-only → 5.86 fused, 2.15×; 3.0× on vision-targeted
-queries), while an audit shows one scalar repairs it entirely: weighting
-vision at 0.95 recovers 12.81, found independently twice (video-level-holdout
-α sweep and Old Paper's scalar sweep, same value, same number). Audio's
-marginal contribution at score level is +0.20. The mechanism is derived, not
-narrated: normalized-mean score = (q·v + q·a)/√(2+2·v·a), measured
-cos(v,a)=0.25 → 0.63× margin compression plus injected audio noise — and the
-same averaging RESCUES audio-targeted queries 8× (0.12 → 0.97), the free-ride
-asymmetry that proves the mechanism.
+queries). One scalar repairs it: weighting vision at 0.93 recovers 12.86
+(101-point grid, 5-fold video-disjoint, tuned on train folds and scored held
+out, same optimum in all 5). Audio's true marginal contribution at score level
+is +0.25 — not the 6.75-point hole the collapse appears to leave.
 
-**Why it matters:** this is the fifth null with a NEW shape — the incumbent is
-not near-optimal (ViDoRe-style) but BADLY CHOSEN, and every
-ImageBind/LanguageBind deployment using mean fusion is paying 2–7× for a
-missing hyperparameter with a one-line fix. The audit (fixed-query/varied-media
-screen + per-channel operator rows + the dead-channel instrument outcomes,
-note 05) ports to any AV retrieval stack; where both channels are alive
-(WAVE-7B, contrast running against its 42.63 query-based anchor) the fusion
-question reopens genuinely. Harness agreement with the paper: fused 5.86 vs
-published 6.35 (−7.7%); the controlled vision-vs-fused contrast is NEW —
-the paper never ran it query-based. Venue: ICASSP 2027 (submission
-2026-09-16); the one-scalar repair for deployed systems is the 4-pager's
-spine, with the operator question scoped to live-channel substrates.
+Then the ceiling. A per-query oracle that picks the best weight for each query
+separately reaches 18.50, a genuine +5.64 over the best constant, computed
+EXACTLY rather than sampled (with two modalities the score is affine in w, so
+each distractor is a half-line and the feasible set is a single interval). It
+is null-controlled: the same procedure aimed at random non-gold targets
+harvests 0.01, and only 0.01% of queries have an exact duplicate of the gold.
+But it is not reachable. A linear head on the query embedding, initialized AT
+the best constant so that doing nothing was a free pass, instead drifted
+(‖θ‖=7.9, w spread 0.63–0.96) and generalized BELOW its own initialization:
+12.49 held out, recovering −0.35 of the +5.64.
+
+**Why it matters:** two claims, both actionable. First, the incumbent is not
+near-optimal (ViDoRe-style) but BADLY CHOSEN — deployments using mean fusion
+pay the measured 2.15–3.0× for a missing hyperparameter with a one-line fix.
+Second, FLARE closes in MultiVENT's shape — oracle-reachable,
+probe-unrecoverable — making it our second data point for the general lesson
+that an oracle ceiling is not a target unless something visible at inference
+time predicts it. The audit (fixed-query/varied-media screen + per-channel
+operator rows + dead-channel instrument outcomes, note 05) ports to any AV
+retrieval stack.
+
+**Mechanism, derived not narrated:** normalized-mean score =
+(q·v + q·a)/√(2+2·v·a); measured cos(v,a)=0.25 gives 0.63× margin compression,
+and the same averaging RESCUES audio-targeted queries 8× (0.12 → 0.97) — the
+free-ride asymmetry that proves it. Stated residual: compression alone predicts
+12.61 × 0.6325 = 7.98 against 5.86 observed, so about two thirds of the
+collapse is explained and the remaining term (injected audio noise) is
+currently ASSERTED, not measured. The dead-audio control (set q·a = 0, retain
+the √(2+2·v·a) normalization) is the pending decisive run and should land
+before venue selection.
+
+**Two corrections we carry rather than bury.** Our earlier "12.81 at w=0.95,
+found independently twice" was a SHARED BLIND SPOT: two sweeps agreed because
+neither grid contained 0.93, so the agreement was one measurement run twice,
+not a cross-check. Treat identical numbers from a shared pipeline as a
+reproduction until the inputs are shown disjoint. And the WAVE-7B contrast is
+NOT running: all three arms wrote a complete 734 MB text.pt but produced zero
+gallery results, with 399/399 clips dying on CUDA out-of-memory (verified
+2026-08-13). It is blocked on a memory fix, not in flight.
+
+Harness agreement with the paper: fused 5.86 vs published 6.35 (−7.7%); the
+controlled vision-vs-fused contrast is NEW — the paper never ran it
+query-based. Venue: ICASSP 2027 (submission 2026-09-16); the one-scalar repair
+plus the unlearnability result is the 4-pager's spine, with the operator
+question scoped to live-channel substrates (WAVE, once its OOM is fixed).
+Caveats: linear probe, single frozen query embedding, single seed, score-level
+only — token-level and candidate-aware operators are untested and remain the
+live option.
 
 ### Imaginability audit (H3 line, design locked)
 
