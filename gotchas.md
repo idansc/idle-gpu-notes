@@ -831,3 +831,36 @@ content, i.e. an audio-path deficit rather than a level shift. "It shifts every
 arm together, so orderings are preserved" was the natural assumption and its own
 numbers refuted it. A discrepancy correlated with the axis your headline varies
 along is a bias in the headline, not a constant.
+
+## Measure your control's floor on data you know is identical
+
+An integrity check reported "min per-query cosine between arms = 0.999998" and
+was read, by two people, as *nearly* identical — from which we inferred about
+1e-6 of run-to-run nondeterminism in the text tower, and derived a rule that
+differences at the third decimal were not meaningful.
+
+There is no nondeterminism. The arms are **bitwise identical**, `torch.equal`
+True, `max|Δ| = 0.000e+00`. Compared against a byte-for-byte copy of itself, the
+same check still returns **0.99999827** — that number is the FLOOR of
+`cosine_similarity` on fp32 embeddings of width 3584, not a measured difference.
+
+So the control was unfalsifiable in the range that mattered. It returns ~0.999998
+for identical data, which means it cannot separate "same" from "differs by 1e-6",
+and a real 5e-6 discrepancy would have been dismissed as noise *by the rule we
+derived from its floor*. A check that cannot fail in the regime you are screening
+is not evidence, and it is worse than no check because it produces a number that
+reads like reassurance.
+
+Two habits:
+
+- **Calibrate the control on a known-identical pair first.** Run it on a copy.
+  Whatever it returns is your floor, and your detection threshold has to sit well
+  above it. This costs one line and converts an opinion into a measurement.
+- **Report `max|Δ|` and exact equality alongside any similarity.** Their floor is
+  exactly zero, so they stay informative where cosine saturates. Reserve cosine
+  for the regime it is good at — catching gross divergence, not certifying
+  identity.
+
+The same blind spot lives in every "cosine ≈ 1.0 so the mirror is intact" check.
+Ours read on embeddings of width 3584; the floor moves with dtype and dimension,
+which is exactly why it has to be measured rather than assumed.
