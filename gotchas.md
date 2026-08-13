@@ -597,7 +597,27 @@ Result counts identical across two readings minutes apart settles it
 independently of any process listing, and would have been right in every one of
 the four cases above.
 
-The family resemblance is worth more than the four instances: each check
+**The same trap in `pkill` does not return a wrong answer — it kills you.**
+Clearing the redundant workers:
+
+```bash
+pkill -u "$USER" -f "exps_mmlab"      # matches the ssh command running it
+```
+
+The remote command's own line contains `exps_mmlab`, so `pkill` terminates the
+session mid-script, leaving the actual cleanup half-done and the operator
+guessing which processes died. Every rule above applies, and the stakes are
+higher because the failure is destructive rather than merely confident:
+
+```bash
+pkill -u "$USER" -f "exps_mml[a]b"
+```
+
+Never let a `pkill` pattern be the first thing you test. Run it as `pgrep -a`
+first and read the list — if your own shell is in it, the `pkill` would have
+killed you.
+
+The family resemblance is worth more than the five instances: each check
 answered a question about *identity* — same bytes? same process? same run? — by
 consulting a proxy that was cheap to read, and each proxy failed toward the
 confident answer rather than toward an error. Including, twice, the proxy
