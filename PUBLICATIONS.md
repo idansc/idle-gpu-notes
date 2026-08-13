@@ -244,7 +244,7 @@ Harness agreement with the paper: fused 5.86 vs published 6.35 (−7.7%); the
 controlled vision-vs-fused contrast is NEW — the paper never ran it
 query-based. Venue: ICASSP 2027 (submission 2026-09-16); the one-scalar repair
 plus the unlearnability result is the 4-pager's spine, with the operator
-question scoped to live-channel substrates (WAVE, once its OOM is fixed).
+question scoped to live-channel substrates (WAVE, once its dtype cast and its OOM are both fixed).
 Caveats: linear probe, single frozen query embedding, single seed, score-level
 only — token-level and candidate-aware operators are untested and remain the
 live option.
