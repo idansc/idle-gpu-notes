@@ -255,7 +255,7 @@ reverses:
 |---|---|---|
 | learned constant `w` (held out) | 12.84 | 13.08 |
 | **learned `w(q)`** (held out) | 12.49 | **13.28** |
-| `w(q)` − const, paired | **−0.349** [−0.485, −0.211] | **+0.192** [+0.093, +0.289] |
+| `w(q)` − const, paired | **−0.349** [−0.485, −0.211] | **+0.159** [mean of 5 partitions] |
 
 Same code, same video-disjoint folds, same top-1 surrogate, same
 initialize-at-the-best-constant free pass. Only the operator changed, and the
@@ -267,7 +267,7 @@ selection, and the nested grid run's margin (+0.474 over vision-only 12.61 =
 13.08). And `w(q)` at 13.28 also beats the best *fixed* grid point, 13.12, so it
 is not merely beating a poorly-chosen constant.
 
-**What it actually recovers: +0.192 of +4.68 available, i.e. 4.1% of the oracle
+**What it actually recovers: +0.159 of +4.68 available, i.e. 3.4% of the oracle
 gap.** So the honest claim is neither the old null nor a win:
 
 > A query-conditioned weight is measurably better than any fixed one, and
@@ -761,3 +761,37 @@ a quantity that measured the sampler rather than the bound.
 
 Five groupings, none beating a single global weight, against a null-controlled
 +4.64 of available headroom. The conclusion survives the family correction.
+
+
+## The flip survives five fold partitions
+
+A reversal carrying a claim deserves more than one split. The paired bootstrap
+resamples *queries*; it never resamples the *split*. And the seed test was
+already a no-op once here — deterministic full-batch Adam, sd exactly 0.00 — so
+the fold partition is the only randomness actually exercising this estimator.
+Five different video→fold assignments, refit end to end:
+
+| partition | const | `w(q)` | `w(q)` − const | vs best FIXED w=0.87 |
+|---|---|---|---|---|
+| 0 | 13.09 | 13.23 | +0.149 [+0.050, +0.246] | +0.116 [+0.017, +0.218] |
+| 1 | 13.07 | 13.23 | +0.164 [+0.067, +0.267] | +0.116 [+0.017, +0.216] |
+| 2 | 13.08 | 13.23 | +0.149 [+0.054, +0.244] | +0.114 [+0.013, +0.215] |
+| 3 | 13.08 | 13.23 | +0.146 [+0.048, +0.239] | +0.110 [+0.011, +0.213] |
+| 4 | 13.06 | 13.25 | +0.185 [+0.088, +0.280] | +0.131 [+0.030, +0.230] |
+
+**All five positive, every CI excluding zero, mean +0.159 (sd 0.015).** It also
+beats the best *fixed* grid point (13.12), not just the held-out constant, by
++0.110 to +0.131 — so it is not winning against a handicapped baseline.
+
+Two things this corrects or qualifies in my own favour and against it:
+
+**The first partition was at the optimistic end.** I reported +0.192 from a
+single split; the five-partition mean is **+0.159**, and that is the number to
+quote. Small, but it is the fourth time on this benchmark that a value from one
+configuration read higher than the honest aggregate.
+
+**"Query-conditioned" should not be oversold.** The head emits w with sd 0.039
+around a mean of 0.887 — full range 0.571 to 0.977, so it is genuinely varying
+and not a constant with jitter, but for most queries it is modulating by about
+±0.04. A real effect of a modest size, produced by a modest deviation from the
+best constant.
