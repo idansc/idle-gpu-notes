@@ -417,9 +417,24 @@ running with `ppid 1`, adopted by init; from outside it looked as dead as the
 terminal that started it. Someone relaunched. Fourteen hours later two processes
 were walking the same video list into the same output directory with
 byte-identical arguments — same `--run_name`, same `--exp_dir`, both
-`--num_chunks 1 --chunk_idx 0`, so no sharding kept them apart. Concurrent
-writers that both pass a skip-if-exists check can produce a torn `.pt`, which is
-the failure mode that loads without complaint.
+`--num_chunks 1 --chunk_idx 0`, so no sharding kept them apart.
+
+The obvious worry is a torn `.pt` — concurrent writers both passing a
+skip-if-exists check, producing the kind of file that loads without complaint.
+We audited it rather than assuming it: `torch.load` over all 164 `.pt` files in
+the contested directory gave **0 load failures and a uniform (1024,) shape**,
+none under 10 kB, after 16 hours of overlap. The write window per file is
+milliseconds, so the race is real in principle and did not fire once here. Carry
+the raw counts with the claim; without them this entry reads as a corruption
+finding when what we have is a clean audit.
+
+The damage is elsewhere, and it is total rather than partial. Two processes
+walking the *same list in the same order* under skip-if-exists do not split the
+work: the later one skips everything already on disk, catches up to wherever the
+first has reached, and then shadows it — both computing the same item at the same
+time, forever, because neither can see output the other has not written yet. A
+duplicate does not halve the remaining time. It contributes nothing, on a shared
+box where someone else is queued.
 
 Every connection drop manufactures one of these, so the guard belongs in the
 launcher rather than in anyone's memory:
