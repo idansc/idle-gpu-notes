@@ -94,7 +94,7 @@ Before reporting an argmax as a finding, test it against its neighbours on the
 same items. If the curve is flat, report the plateau. And note the argmax's
 advantage over a baseline inherits the selection -- quote the plateau's WORST
 endpoint, not the peak's: here the peak claimed +0.25 [+0.11, +0.40] while the
-selection-free floor was +0.019 [+0.017, +0.373].
+selection-free floor was +0.194 [+0.017, +0.373].
 
 ## A run can be correct while its sentence is wrong
 
