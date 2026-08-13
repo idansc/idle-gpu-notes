@@ -12,12 +12,14 @@ Assembly drafts live in `papers/`.
 
 ### 1. "Oracle headroom" can be an illusion
 
-> ⚠️ **PROVISIONAL — computed over 4 of 5 channels.** The MultiVENT sweep drops
-> `sims[..., 0]` on a comment asserting it is padding; it is not. Slice 0 scores
-> R@1 20.15% alone (chance 0.066%) and holds 47.3% of doc tokens. So max 57.43,
-> the learned arms and the 89.3% LP reachability are all computed on a subset
-> that excludes the second-strongest channel. The bound over the wrong channel
-> set is the wrong bound. Re-run pending cluster access; see note 04.
+> ⚠️ **Computed over 4 of 5 channels — but the headline is safe in direction.**
+> The MultiVENT sweep drops `sims[..., 0]` on a comment asserting it is padding;
+> it is not (R@1 20.15% alone against 0.066% chance, 47.3% of doc tokens).
+> **The 89.3% LP reachability is a LOWER BOUND** and cannot be overturned: the
+> 5-channel feasible set contains the 4-channel one, so adding the channel can
+> only raise it. What is genuinely at risk is **max 57.43** (maxing over more
+> channels is not monotone), the learned arms, and the outward-facing
+> reproduction 57.63 vs 58.47. Re-run pending cluster access; see note 04.
 
 
 **What we found:** for 9 of 10 MultiVENT queries, SOME weighting of the four

@@ -34,10 +34,44 @@
 > neighbours for scale, on a different metric so not directly comparable to
 > 57.43: max over 0–3 = 21.54, max over all five = 24.14.
 >
-> Until that runs, treat **57.43, 56.23, 59.12 and the 89.3% LP reachability as
-> provisional**. The relative ordering may well survive — every arm was fed the
-> same four slices — but the max baseline is a max over a subset, and an oracle
-> bound computed over the wrong channel set is the wrong bound.
+> **Not everything below is equally at risk, and which is which is decidable on
+> paper.** Over-flagging costs something too: a note where every number is
+> provisional tells a reader nothing about what to trust.
+>
+> **Safe in direction — these are LOWER BOUNDS and cannot be overturned:**
+> - **LP reachability 89.3%.** The 5-channel feasible set strictly contains the
+>   4-channel one (set `w₀ = 0` to recover it), so a query that was reachable
+>   stays reachable. Adding slice 0 can only raise it. Keep asserting it, as a
+>   lower bound.
+>
+> **At risk, can move either way:**
+> - **max 57.43.** Maxing over *more* channels is not monotone in a ranking
+>   metric, and there is a direct measurement of it hurting: on an ad-hoc R@1,
+>   slice 4 alone scores 24.47 while max over all five scores 24.14. A
+>   weak-but-confident channel wins pairs it should not.
+> - **learned `w(q)` 56.23.** More inputs, more capacity, more to overfit.
+>   Direction unknown.
+> - **the reproduction, 57.63 vs published 58.47** — the number most at risk,
+>   because it inherits max's non-monotonicity *and* faces outward rather than
+>   comparing arms within one tensor.
+>
+> **Neither — 59.12 was already retracted and monotonicity does not rescue it.**
+> The containment argument applies to the *exact* per-query optimum. 59.12 is the
+> **64-sample Dirichlet** estimate, and 64 draws sample a 5-simplex *worse* than
+> a 4-simplex, so the estimate can fall while the true optimum rises. This is the
+> same failure this note already documents: a sampled quantity is not a bound.
+> Do not quote 59.12 in either direction.
+>
+> ### Pre-registered, before the route returns
+>
+> Our reproduction sits **0.84 below** published. Restoring slice 0 should land
+> the max arm in **[58.0, 58.9]**. All three outcomes are informative:
+> - **inside** → the dropped channel explains the reproduction gap and closes it;
+> - **below 58.0** → the channel was not the cause and the gap is something else;
+> - **above 58.9** → we now over-reproduce, and something is wrong in the other
+>   direction.
+>
+> Written down now so the result is a test rather than a description.
 >
 > One correction to how this was first reported to me: the at-risk slice is index
 > **0**, the one the code drops — not the "slice 4" whose strength prompted the
