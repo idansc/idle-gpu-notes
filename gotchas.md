@@ -83,6 +83,35 @@ confirmation overstates the evidence. (We did exactly that for a few hours.)
 For real confirmation, rebuild the floor at a second budget and require the two
 corrections to agree.
 
+## Agreement between two lines is not replication
+
+Two sessions independently found FLARE's best fusion weight at w=0.95 -> 12.81,
+one by grid sweep and one by 5-fold holdout, matching to the decimal. It was
+wrong: neither grid contained 0.93. Independent *implementations* are not
+independent *designs* -- when both inherit the same grid, tolerance, or
+preprocessing, agreement only confirms they made the same choice, and cannot
+detect an error in that choice.
+
+Before citing agreement as confirmation, name the thing that would have had to
+differ for the two runs to diverge. If nothing does, it is one run reported
+twice. For a swept scalar, refine the grid around the winner before publishing
+the optimum -- and then check the peak is resolvable at all: here the paired
+bootstrap on 0.93 vs 0.95 was +0.049 with CI [-0.028, +0.123], so the "corrected"
+optimum was itself false precision and the honest answer is a plateau.
+
+## sd exactly 0.00 means your seeds did nothing
+
+A 5-seed robustness check returned 12.49 five times, sd 0.00 -- and nearly got
+reported as stability. The fit was full-batch deterministic Adam; the seed
+perturbed only a 1e-3 init the optimiser erased. One solution found five times
+reads exactly like five agreeing samples.
+
+If a seed sweep returns zero variance, the pipeline is deterministic and the
+check measured nothing. Find the real source of variance -- for a deterministic
+fit on fixed data that is the data, so use a paired bootstrap over items
+(both arms score the same items, so compare per-item differences, not two
+marginal CIs).
+
 ## Single-seed results
 
 Seed sd was ~1 point on MMEB VisDial reranking. A first-seed "+2.3 points"

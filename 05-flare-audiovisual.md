@@ -20,7 +20,7 @@ varies. ImageBind, gallery 87,697 clips / 399 videos, zero missing records.
 
 **On queries built to require both modalities, `normalize((v+a)/2)` scores 5.86
 against 12.61 for vision alone — 2.15× worse.** ⚠️ **But the bar for any learned
-operator here is 12.86, not 5.86** — a single tuned scalar recovers the collapse
+operator here is ~12.8, not 5.86** — a single tuned scalar recovers the collapse
 (see below). Never quote the 5.86 gap as available headroom. The vision-query control
 collapses the same way, 31.00 → 10.32.
 
@@ -42,18 +42,32 @@ Sweeping a fixed weight on the cached galleries (no GPU, no re-encoding),
 |---|---|---|---|---|---|---|---|
 | R@1 | 0.25 | 5.00 | 11.60 | 12.80 | **12.86** | 12.81 | 12.61 |
 
-**One scalar recovers the whole 2.15× collapse** (5.00 → 12.86), and audio's
-genuine contribution at its optimum is **+0.25 R@1 over vision alone**.
+**One scalar recovers the whole 2.15× collapse** (5.00 → ~12.8). Audio's genuine
+contribution at the optimum is **+0.25 R@1 over vision alone** — small, but a
+paired bootstrap puts it at [+0.11, +0.39], so it is real.
 
 Replicated independently: a 5-fold **held-out** fit by a second line gives
 α\* = 0.95 and held-out R@1 12.81 — same optimum, same value, so the sweep had
 not overfit.
 
-> **Correction (finer grid).** Both of us reported 0.95 → 12.81 because neither
-> grid contained 0.93. A 101-point grid, tuned on train folds and scored on the
-> held-out fold, picks **w = 0.93 → 12.86** in all 5 folds. Two independent
-> implementations agreeing to the decimal did **not** catch this: we shared the
-> blind spot, not the arithmetic. The bar is **12.86**.
+> **Correction, and then a correction to the correction.** Both lines reported
+> 0.95 → 12.81 because neither grid contained 0.93. A 101-point grid picks
+> w = 0.93 → 12.86 in all 5 folds. Two independent implementations agreeing to
+> the decimal did **not** catch this: we shared the blind spot, not the
+> arithmetic. **That failure mode is the durable lesson here** — replication is
+> only evidence where the two runs could have disagreed.
+>
+> But "the bar is 12.86" was itself false precision, of exactly the kind it was
+> correcting. Paired bootstrap over the same queries: **0.93 − 0.95 = +0.049,
+> 95% CI [−0.028, +0.123] — includes zero.** The peak is not resolvable at
+> n = 53,580. And the 5 folds agreeing is not 5 votes: 5-fold train sets share
+> 3/5 of their data, so those argmaxes are heavily correlated. A bootstrap over
+> queries puts the argmax at 0.93 only 79.8% of the time (0.90: 10.7%,
+> 0.95: 9.1%).
+>
+> **The bar is a plateau: any w ∈ [0.90, 0.95] gives ≈ 12.8.** Quote it that
+> way. Nothing downstream depends on the second decimal — mean fusion destroys
+> ~6.9 points and one scalar gives them back.
 
 So the honest reading of the published ImageBind/LanguageBind collapses (2.5× and
 7.4×) is *equal weighting*, not "fusion is hard". A single tuned number fixes
@@ -63,7 +77,7 @@ built specifically so queries require both.
 This is the fifth null for "a learned reduction beats a hand-designed one", but
 with a new shape: here the hand-designed operator was **badly chosen** rather
 than near-optimal, and the repair is one scalar, not a learned function. Anyone
-proposing a learned fusion here must beat 12.86, not the 5.86 the literature
+proposing a learned fusion here must beat ≈12.8, not the 5.86 the literature
 reports.
 
 Scope: this is score-level fusion of two single-vector embeddings. A token-level
@@ -122,8 +136,47 @@ way in the first attempt:
 
 **It moved and got worse.** ‖θ‖ = 7.9, `w(q)` spread 0.63–0.96 (sd 0.042) — the
 head did not collapse to its initialization, it fit the training folds and
-generalized 0.35 below the constant it started from. Of +5.64 available points,
-a query-conditioned weight recovers **−0.35**.
+generalized below the constant it started from. Paired bootstrap on the
+per-query difference: **−0.349, 95% CI [−0.485, −0.211]** — excludes zero, so
+this is a real loss, not a rounding artifact. Of +5.64 available points, a
+query-conditioned weight recovers −0.35.
+
+> **A no-op robustness check, recorded because it looked convincing.** Asked for
+> seed variance, I ran 5 seeds and got 12.49 five times, sd 0.00 — and nearly
+> reported that as stability. It is not: the fit is full-batch deterministic Adam
+> and the seed only perturbs a 1e-3 init the optimiser erases. That is one
+> solution found five times. When a "robustness" check returns sd exactly 0.00,
+> the run is deterministic and you have measured nothing. The variance that
+> matters was over queries, and it is the paired CI above.
+
+### The obvious escape — group the queries — also fails
+
+If `w` were predictable at *coarse* granularity the null would be much weaker, so
+this is the version to run before believing it. It costs nothing: `hit_grid[q,i]`
+already **is** "gold ranks first at grid `w_i` on the full 87,697-clip gallery",
+so assigning a `w` per group and reading held-out hits is the exact metric with
+no model in between.
+
+Group by whether the query text mentions sound (`music`, `voice`, `melody`,
+`speech`, … — visible at inference, no training):
+
+| | R@1 |
+|---|---|
+| global `w` (held out) | 12.86 |
+| per-group `w`, mentions-sound yes/no | 12.88 |
+| per-group `w`, sound-word count 0 / 1 / 2+ | 12.86 |
+| per-query oracle restricted to the grid | 17.69 |
+
+**+0.01.** The groups *do* select different weights, so the signal is real and
+visible — it is simply worth nothing. And it points the wrong way: queries with
+**no** sound word prefer w = 0.90 (more audio), sound-mentioning queries prefer
+0.93. 90.7% of unified queries mention sound, so the split is 48,576 vs 5,004.
+
+One scope error is worth naming, because it is the natural objection: the screen
+shows averaging *rescuing* audio-targeted queries (0.12 → 0.97) while *destroying*
+vision-targeted ones (31.00 → 10.32), which looks like proof that the best `w`
+varies decodably. It is not — those are **different query sets**. Within the
+unified set, the only set this oracle claim is about, target type is constant.
 
 So FLARE closes in the same shape as MultiVENT: **oracle-reachable,
 probe-unrecoverable.** Two benchmarks, two different reasons for the oracle gap
