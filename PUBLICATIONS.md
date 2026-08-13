@@ -170,11 +170,12 @@ train folds and scored held out). We do not quote a single argmax: paired
 bootstrap on w=0.93 vs w=0.95 gives +0.049, CI [−0.028, +0.123], which includes
 zero — our own earlier "12.81 → 12.86 at w=0.93" correction was false precision
 of exactly the kind it was correcting. What survives the same test is audio's
-marginal contribution over vision alone — but quote it at a PRE-SPECIFIED
-weight, not at the argmax, because the argmax's advantage inherits its own
-selection: w = 0.95 gives **+0.205, paired CI [+0.088, +0.321]**, excluding
-zero, with every plateau point in +0.19 to +0.25. Significant but tiny — and
-not the 6.75-point hole the collapse appears to leave.
+marginal contribution over vision alone, measured under NESTED selection —
+`w` re-chosen off-fold and re-chosen again inside every bootstrap resample, so
+the tuning step carries its own variance: **+0.254, 95% CI [+0.063, +0.386]**,
+excluding zero. Fixed-weight robustness lines beneath it: 0.90/0.93/0.95 give
++0.194/+0.254/+0.205. Significant but tiny — and not the 6.75-point hole the
+collapse appears to leave.
 
 Then the ceiling. A per-query oracle that picks the best weight for each query
 separately reaches 18.50, a genuine +5.64 over the best constant, computed
@@ -274,11 +275,16 @@ same family: "12.86 at w=0.93" quoted an argmax whose lead over 0.95 is
 +0.049, CI [−0.028, +0.123], i.e. indistinguishable from zero. A denser grid
 buys resolution, not significance; the honest object is the plateau, and the
 test that separates them is a paired bootstrap, which is what promoted audio's
-marginal contribution from claim to result. That fix needed a third pass of its
-own: quoting the argmax's +0.25 [+0.11, +0.39] still inherits the selection that
-produced 0.93, so the reported figure is the pre-specified w = 0.95, +0.205
-[+0.088, +0.321]. Selection bias does not disappear because the estimate it
-contaminates is now a difference.
+marginal contribution from claim to result. That fix needed two further passes.
+Quoting the argmax's +0.25 still inherits the selection that produced 0.93, and
+a pre-specified weight only trades one selection for a weaker one — 0.95 was
+itself the argmax of a coarser grid over the same queries. Nested selection
+settles it by measurement: **+0.254, CI [+0.063, +0.386]**. The instructive part
+is where the bias actually lived. The point estimate never moved — all five
+folds pick the same `w`, so off-fold selection returns the plug-in answer — but
+holding that `w` fixed while resampling made the interval **1.13× too narrow**,
+putting the lower bound at +0.112 where the honest one is +0.063. We spent three
+passes hunting an overstated effect; what was overstated was the confidence.
 
 **WAVE-7B status, and a log that outran three readings of it.** The contrast is
 RUNNING as of 2026-08-13 12:48 — four sharded gallery workers, results
