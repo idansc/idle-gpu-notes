@@ -59,17 +59,28 @@ is markedly more fragile:
 
 Every point on the plateau beats vision-only with a CI excluding zero.
 
-**Headline the pre-specified point, not the argmax: w = 0.95, +0.205,
-[+0.088, +0.321].** That value was fixed by two earlier grids before this
-question was posed, so it does not inherit the selection that 0.93 does. The
-plateau range is the robustness check, and its weakest floor is **+0.017** —
-above zero and barely.
+**The headline number is the nested one: +0.254, 95% CI [+0.063, +0.386].**
+Rather than argue about which fixed `w` to quote, remove the selection: for each
+held-out fold, pick `w` on the *other* folds and take the difference against
+vision-only inside that fold. No grid-resolution argument, no round-number
+defence — and it estimates what a deployment actually faces, "tune the weight on
+your data, apply it to new data, versus drop audio".
 
-One caveat, because "carries no selection at all" would be too strong: 0.95 was
-itself the argmax of a coarser grid over these same 53,580 queries. It is
-selection at lower resolution, not the absence of selection. What makes it the
-better instrument is that it was chosen before anyone asked what audio was worth,
-not that it was chosen blind.
+The bootstrap has to be nested too, or it smuggles the bias back: resampling
+queries while reusing weights chosen on the full data holds selection fixed and
+understates its variance. Redoing the selection inside every resample:
+
+| | Δ R@1 | 95% CI | width |
+|---|---|---|---|
+| **nested selection, nested bootstrap** | **+0.254** | **[+0.063, +0.386]** | 0.323 |
+| weights fixed, queries resampled | +0.254 | [+0.112, +0.398] | 0.286 |
+
+Two things worth reading off this. The **point estimate is unchanged** — nested
+selection picks w = 0.93 in all five folds, so the bias I was worried about was
+never in the estimate. It was in the **interval**: the naive bootstrap is 1.13×
+too narrow and puts the lower bound at +0.112 where the honest one is **+0.063**.
+
+Robustness at fixed weights: 0.90 → +0.194, 0.93 → +0.254, 0.95 → +0.205.
 
 Replicated independently: a 5-fold **held-out** fit by a second line gives
 α\* = 0.95 and held-out R@1 12.81 — same optimum, same value, so the sweep had
