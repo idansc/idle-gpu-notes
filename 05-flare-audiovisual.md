@@ -108,10 +108,17 @@ audio-induced *normalizer*: `(q·v) / √(2 + 2·v·a)`.
 Harness check: the formula reproduces the measured incumbent to **+0.00** against
 the arm's own encoded gallery, so this is describing the real operator.
 
-**The dominant term is the injected noise, not the compression** — and the
-prediction it replaces was wrong in an interesting way. Compression alone was
-expected to land at 7.98; it lands at **10.65**, costing only 1.96 of the
-6.75-point collapse. Adding `q·a` costs 4.79.
+**The dominant term is the injected noise, not the compression.** Under the
+corrected model this arm has a definite prediction: if the per-document
+denominators were homogeneous, every score would be divided by the same
+constant, ranking would be untouched, and it would return **12.61**. It returns
+**10.65**, so denominator *heterogeneity* costs 1.96 of the 6.75-point collapse
+and adding `q·a` costs 4.79.
+
+(The 7.98 figure this replaces was never a valid expectation, and the reason is
+worth keeping: it derived a single 0.63× factor from the *mean* cos(v,a) — that
+is, from the very homogeneity assumption under which the effect on R@1 is
+exactly zero. A prediction and its own premise cannot both be right here.)
 
 The decomposition is not additive, and reading it in the other order is what
 makes the point sharp: adding audio to an *un*-normalized score costs 7.61
