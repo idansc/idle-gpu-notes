@@ -519,3 +519,56 @@ is measuring the surrogate.
 
 The general shape: extra capacity buys escape from a badly specified objective,
 and that escape is indistinguishable from the effect you are trying to measure.
+
+## Three identity checks that confidently return the wrong answer
+
+All three fired in one afternoon, on the same investigation, and each one flipped
+a conclusion.
+
+**Hash the payload, not the container.** Seven retrieval arms wrote per-video
+`.pt` files; `md5sum` gave seven different hashes, which reads as seven distinct
+computations. Loading the tensors said the opposite — arms sharing `media_mode`
+were **bit-identical**, `max|diff| = 0.00e+00`. The files differed only because
+the dict stores `query_mode` and other metadata beside the payload:
+
+```python
+{'video_id':…, 'model':…, 'query_mode':…, 'media_mode':…, 'clip_ids':…, 'clip_feat':…}
+```
+
+`query_mode` is recorded and never touches `clip_feat`. Four of the seven arms
+were recomputing another arm's numbers — ~57% of a 17-hour encode — and the
+cheap check said everything was fine. Whenever metadata shares a serialized
+object with data, compare the tensor.
+
+**A comparison over a vanished process reads as agreement.** Checking whether two
+processes had identical arguments:
+
+```bash
+diff <(tr '\0' '\n' < /proc/$A/cmdline) <(tr '\0' '\n' < /proc/$B/cmdline) && echo "IDENTICAL"
+```
+
+Both processes had already exited. Both reads produced empty output, `diff`
+found no difference, and it printed `IDENTICAL` — a positive claim manufactured
+out of two absences. Assert both streams are non-empty before comparing
+anything that can disappear.
+
+**`pgrep -f` matches the command that runs it.** Searching for live workers:
+
+```bash
+pgrep -u "$USER" -f complete_retrieval_pipeline     # finds your own shell
+```
+
+The pattern appears in the searching shell's own command line, so a dead
+pipeline reports one live process. That phantom was briefly read as evidence
+that work had restarted and was regenerating duplicates. Use the bracket trick
+so the pattern cannot match itself, and confirm against something independent —
+GPU compute apps, or output counts that should be advancing:
+
+```bash
+pgrep -u "$USER" -f '[c]omplete_retrieval_pipeline'
+```
+
+The family resemblance is worth more than the three instances: each check
+answered a question about *identity* — same bytes? same process? same run? — by
+consulting a proxy that was cheap to read, and each proxy failed toward the
+confident answer rather than toward an error.
