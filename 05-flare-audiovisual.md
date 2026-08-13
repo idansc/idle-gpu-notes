@@ -84,6 +84,46 @@ Scope: this is score-level fusion of two single-vector embeddings. A token-level
 operator could in principle extract more. A **query-conditioned** one cannot —
 that is now measured, below.
 
+## What the averaging operator actually destroys
+
+Before asking what could repair the collapse, measure what causes it. Two
+mechanisms are bundled in `normalize((v+a)/2)`, and only one had been estimated:
+
+- **Compression** — the score is `(q·v + q·a) / |v+a|` with
+  `|v+a| = √(2 + 2·v·a)`, a *per-document* denominator. Measured
+  `cos(v,a) = 0.247 ± 0.120`, so `|v+a|` ranges 1.31–1.79.
+- **Reordering** — `q·a` enters the numerator, and audio-text is near-noise here
+  (audio-only R@1 = 0.25).
+
+The control that separates them kills the audio *signal* while keeping the
+audio-induced *normalizer*: `(q·v) / √(2 + 2·v·a)`.
+
+| arm | R@1 |
+|---|---|
+| vision only, `q·v` | 12.61 |
+| **dead audio, compression kept**, `q·v / |v+a|` | **10.65** |
+| incumbent, `(q·v + q·a) / |v+a|` | 5.86 |
+| audio added, no compression, `(q·v + q·a)/2` | 5.00 |
+
+Harness check: the formula reproduces the measured incumbent to **+0.00** against
+the arm's own encoded gallery, so this is describing the real operator.
+
+**The dominant term is the injected noise, not the compression** — and the
+prediction it replaces was wrong in an interesting way. Compression alone was
+expected to land at 7.98; it lands at **10.65**, costing only 1.96 of the
+6.75-point collapse. Adding `q·a` costs 4.79.
+
+The decomposition is not additive, and reading it in the other order is what
+makes the point sharp: adding audio to an *un*-normalized score costs 7.61
+(12.61 → 5.00), and then switching to the per-document normalizer **gives back
+0.86** (5.00 → 5.86). So the varying denominator — the "documents are penalised
+for disagreeing with themselves" story, including my own earlier framing of it —
+is a small term, and on top of an already-audio-polluted score it *helps*.
+
+What survives is simpler and blunter: **the operator's failure is that it adds a
+noise channel at equal weight.** That is why one scalar repairs it, and it is why
+the repair is a weight rather than a better normalizer.
+
 ## The per-query oracle is real, and unreachable
 
 If a learned operator is to beat one number, the best `w` has to differ per
@@ -157,8 +197,10 @@ already **is** "gold ranks first at grid `w_i` on the full 87,697-clip gallery",
 so assigning a `w` per group and reading held-out hits is the exact metric with
 no model in between.
 
-Group by whether the query text mentions sound (`music`, `voice`, `melody`,
-`speech`, … — visible at inference, no training):
+Group by a **lexical proxy for audio-relevance**: does the query text mention
+sound (`music`, `voice`, `melody`, `speech`, …)? Visible at inference, no
+training. Calling this "query type" would oversell it — see the direction problem
+below.
 
 | | R@1 |
 |---|---|
@@ -167,10 +209,15 @@ Group by whether the query text mentions sound (`music`, `voice`, `melody`,
 | per-group `w`, sound-word count 0 / 1 / 2+ | 12.86 |
 | per-query oracle restricted to the grid | 17.69 |
 
-**+0.01.** The groups *do* select different weights, so the signal is real and
-visible — it is simply worth nothing. And it points the wrong way: queries with
-**no** sound word prefer w = 0.90 (more audio), sound-mentioning queries prefer
-0.93. 90.7% of unified queries mention sound, so the split is 48,576 vs 5,004.
+**+0.01, against an available +4.83 within the same grid.** The structure is
+real — the groups *do* select different weights — and it is worthless.
+
+Two honest limits on this. The direction is backwards: queries with **no** sound
+word prefer w = 0.90 (*more* audio), sound-mentioning ones prefer 0.93. And the
+split is 48,576 vs 5,004, since 90.7% of unified queries mention sound at all.
+Both say the lexical proxy is not capturing audio-relevance. So this rules out
+*this* grouping, not every grouping — though note a better grouping could only
+help, and the ceiling it would be chasing is the +4.83 grid oracle.
 
 One scope error is worth naming, because it is the natural objection: the screen
 shows averaging *rescuing* audio-targeted queries (0.12 → 0.97) while *destroying*
