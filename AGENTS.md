@@ -60,6 +60,7 @@ work someone already paid for.
 | Frame selection on MultiVENT | Deleting ALL frames costs 0.32 — nothing to select |
 | Audio as a 5th MultiVENT channel | Wrong gap: unreachable queries are visual |
 | FLARE as a fusion testbed | Avg fusion 5.86 vs vision 12.61 — ONE scalar gives **≈12.8** (plateau w∈[0.90,0.95]). Per-query oracle 18.50, decoy null 0.01, learned w(q) **12.49** (paired CI [-0.49,-0.21]) and 8 visible groupings all <= +0.01: oracle-reachable, probe- AND group-unrecoverable (as MultiVENT). Audio worth +0.19-0.25, significant but tiny |
+| FLARE, which models collapse | Published 2x2: fusion HURTS the 2 models the authors average-pooled themselves (ImageBind 2.03x, LanguageBind 4.67x), HELPS the 2 with native joint encoders (PerceptionAV 1.08x, WAVE 2.54x). The collapse is the stopgap, not AV fusion |
 | FLARE mechanism, measured | Collapse is 71% injected q·a noise (−4.79), only 29% compression (−1.96); dead-audio control 10.65. The varying normalizer HELPS by 0.86 on top of audio |
 
 ## Contributing back

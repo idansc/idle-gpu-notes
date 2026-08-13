@@ -311,16 +311,56 @@ seed, score-level only. A token-level operator, or one seeing the candidate as
 well as the query, is untested and is the remaining live option. Read it as
 "null at probe level".
 
-**Calibration.** The paper's query-based Table 3 has no ImageBind vision-only row
-— the single ImageBind row is the *fused* variant at 6.35/16.59/23.09. Our fused
-arm on unified queries is 5.86, i.e. −7.7%: acceptable harness agreement. Our
-vision-only 31.00 has no published counterpart but brackets sanely inside the
-paper's own vision group (CLIP 13.89 < 31.00 < SigLIP2 33.98), consistent with
-ImageBind's ViT-H tower.
+**Calibration, and a retraction.** This note previously claimed the vision-only
+vs fused contrast on query-based queries "is not in the paper — it is new
+content". **That was wrong.** Table 4 (T→Clip, query regime) carries both sides
+for ImageBind, and our arms reproduce both:
 
-So the **vision-only vs fused contrast on query-based queries is not in the
-paper** — it is new content, and it is what shows the operator is the problem
-rather than the encoder.
+| | published | ours | Δ |
+|---|---|---|---|
+| ImageBind fused (unified media) | 6.35 | 5.86 | −7.7% |
+| ImageBind vision-only | 12.87 | 12.61 | −2.0% |
+
+Two-sided agreement inside 8% is a better harness check than the one-sided one
+we had, so the correction strengthens the reproduction while removing the
+novelty claim. **The collapse was visible in the published table all along.**
+What is new here is the explanation (an equal-weight noise channel), the repair
+(one scalar), and the bound on repairing it further (oracle 18.50, probe 12.49,
+eight groupings ≤ +0.01) — not the observation.
+
+## Which models collapse, and why: a published 2×2
+
+The same table answers a question the note had been treating as open. Table 4,
+T→Clip, query regime, R@1:
+
+| model | fused | vision-only | fusion does |
+|---|---|---|---|
+| ImageBind | 6.35 | 12.87 | **hurts 2.03×** |
+| LanguageBind | 3.32 | 15.52 | **hurts 4.67×** |
+| Perception AV Large | 7.79 | 7.22 | helps 1.08× |
+| Wave-7B | 42.63 | 16.80 | helps 2.54× |
+
+The split is not "which encoders have live audio". Appendix B.1 states the
+mechanism outright: ImageBind and LanguageBind ship no official recipe for
+combining per-modality embeddings, so **the benchmark's authors** average-pooled
+the ℓ₂-normalized vision and audio vectors themselves, following standard
+late-fusion practice. Perception AV Large and Wave-7B natively emit a joint
+audiovisual embedding and are used as-is.
+
+**Every model where fusion was improvised collapses; every model with a native
+joint encoder gains.** 2 for 2 on each side.
+
+This sharpens the claim and fixes a scope risk at the same time. The honest
+statement is *not* "audiovisual fusion is hard" or even "hand-designed operators
+lose". It is: **the collapse is a property of the mean-pooling stopgap applied to
+encoders that have no joint output.** Nothing here licenses a conclusion about
+audiovisual fusion in general — the two models that actually fuse jointly both
+improve, one of them by 2.5×.
+
+Which is also why the operator question moves to WAVE rather than staying on
+ImageBind: a scalar repairs the stopgap, and the interesting question is whether
+score-level combination of two live channels can reach what joint training
+reaches.
 
 **Caveat that shaped the design:** the three query sets differ in difficulty
 (vision-only scores 31.00 on vision queries but 12.61 on unified queries; audio
