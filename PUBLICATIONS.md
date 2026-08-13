@@ -186,28 +186,59 @@ pay the measured 2.15–3.0× for a missing hyperparameter with a one-line fix.
 Second, FLARE closes in MultiVENT's shape — oracle-reachable,
 probe-unrecoverable — making it our second data point for the general lesson
 that an oracle ceiling is not a target unless something visible at inference
-time predicts it. The audit (fixed-query/varied-media screen + per-channel
+time predicts it. One open tension before that line can stand as stated: our
+own free-ride result shows fusion moves vision-targeted and audio-targeted
+queries in OPPOSITE directions, and query type is not hidden at inference, so a
+2–3 parameter per-group weight is the obvious thing the linear probe should
+have found and did not. That test is minutes and is pending; if a per-group
+weight recovers a meaningful share of the +5.64, "probe-unrecoverable" narrows
+to "this probe, this parameterization". The audit (fixed-query/varied-media screen + per-channel
 operator rows + dead-channel instrument outcomes, note 05) ports to any AV
 retrieval stack.
 
-**Mechanism, derived not narrated:** normalized-mean score =
-(q·v + q·a)/√(2+2·v·a); measured cos(v,a)=0.25 gives 0.63× margin compression,
-and the same averaging RESCUES audio-targeted queries 8× (0.12 → 0.97) — the
-free-ride asymmetry that proves it. Stated residual: compression alone predicts
-12.61 × 0.6325 = 7.98 against 5.86 observed, so about two thirds of the
-collapse is explained and the remaining term (injected audio noise) is
-currently ASSERTED, not measured. The dead-audio control (set q·a = 0, retain
-the √(2+2·v·a) normalization) is the pending decisive run and should land
-before venue selection.
+**Mechanism — one measured fact, one open split.** Measured and solid: the same
+averaging that halves vision-targeted queries RESCUES audio-targeted ones 8×
+(0.12 → 0.97). That free-ride asymmetry is the load-bearing evidence, and it
+rests on which queries move, not on any score algebra.
+
+The score algebra we previously offered was WRONG and is retracted. We wrote
+that normalized-mean score = (q·v + q·a)/√(2+2·v·a) with measured
+cos(v,a)=0.25 gives "0.63× margin compression", predicting
+12.61 × 0.6325 = 7.98 against 5.86 observed. R@1 is invariant to any positive
+rescaling of all scores for a query, and computing 0.63 from the MEAN cos(v,a)
+treats the divisor as a global constant — under exactly that assumption its
+effect on R@1 is ZERO, not −37%. The prediction and the assumption used to
+derive it are incompatible, so there is no 7.98 anchor and no 0.735 residual to
+explain. Compression is real for margins and irrelevant for ranks.
+
+Rebuilt, only two things can move R@1 here: (a) the injected q·a term, and
+(b) HETEROGENEITY of v_i·a_i across gallery items — items whose vision and
+audio agree shrink less and float up past items where they disagree. One gap,
+12.61 → 5.86, to split two ways. The pending control (set q·a = 0, RETAIN the
+per-item √(2+2·v_i·a_i)) isolates (b) exactly: if heterogeneity is negligible
+it returns ≈12.61, and whatever falls below 12.61 is the (b) term with the
+remainder to 5.86 being (a). A return near 12.61 is the cleanest version of
+this story — averaging a dead channel is pure injected noise, no normalization
+narrative required. Cheap design: score gold plus a fixed random 10k-item
+gallery subset under all three conditions (vision-only, fused, q·a=0) on the
+identical subset; absolute R@1 shifts but the three-way split is preserved at
+~9× less compute than the full 53,580 × 87,697 pass. This should land before
+venue selection; until it does, the split is UNMEASURED and the entry does not
+claim a derived mechanism.
 
 **Two corrections we carry rather than bury.** Our earlier "12.81 at w=0.95,
 found independently twice" was a SHARED BLIND SPOT: two sweeps agreed because
 neither grid contained 0.93, so the agreement was one measurement run twice,
 not a cross-check. Treat identical numbers from a shared pipeline as a
 reproduction until the inputs are shown disjoint. And the WAVE-7B contrast is
-NOT running: all three arms wrote a complete 734 MB text.pt but produced zero
-gallery results, with 399/399 clips dying on CUDA out-of-memory (verified
-2026-08-13). It is blocked on a memory fix, not in flight.
+NOT running: all three arms wrote a complete text.pt but produced zero gallery
+results. Counted per arm (2026-08-13), the failures are NOT one cause —
+maudio 1596 errors all dtype/0 OOM, munified 399 all dtype/0 OOM, mvision 399
+all OOM/0 dtype. So two arms are blocked on the missing fp16 cast in
+WAVEAdapter._move_inputs and one on memory; tuning batch size would leave two
+thirds of the work failing identically. (Our own first reading of this said
+"all three OOM" after sampling a single arm's log — the same generalize-from-one
+error as the shared-grid mistake above, one level down.)
 
 Harness agreement with the paper: fused 5.86 vs published 6.35 (−7.7%); the
 controlled vision-vs-fused contrast is NEW — the paper never ran it
