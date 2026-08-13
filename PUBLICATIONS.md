@@ -164,10 +164,14 @@ audio (FLARE, [2605.10228](https://arxiv.org/abs/2605.10228)), the standard
 fusion — average of L2-normalized embeddings, the recipe FLARE itself calls
 "standard late-fusion practice" — HALVES ImageBind's performance on a fixed
 query set (R@1 12.61 vision-only → 5.86 fused, 2.15×; 3.0× on vision-targeted
-queries). One scalar repairs it: weighting vision at 0.93 recovers 12.86
-(101-point grid, 5-fold video-disjoint, tuned on train folds and scored held
-out, same optimum in all 5). Audio's true marginal contribution at score level
-is +0.25 — not the 6.75-point hole the collapse appears to leave.
+queries). One scalar repairs it: down-weighting audio recovers ~12.8 on a
+PLATEAU, w ∈ [0.90, 0.95] (101-point grid, 5-fold video-disjoint, tuned on
+train folds and scored held out). We do not quote a single argmax: paired
+bootstrap on w=0.93 vs w=0.95 gives +0.049, CI [−0.028, +0.123], which includes
+zero — our own earlier "12.81 → 12.86 at w=0.93" correction was false precision
+of exactly the kind it was correcting. What survives the same test is audio's
+marginal contribution, +0.25 with paired CI [+0.11, +0.39] excluding zero — not
+the 6.75-point hole the collapse appears to leave.
 
 Then the ceiling. A per-query oracle that picks the best weight for each query
 separately reaches 18.50, a genuine +5.64 over the best constant, computed
@@ -212,38 +216,58 @@ derive it are incompatible, so there is no 7.98 anchor and no 0.735 residual to
 explain. Compression is real for margins and irrelevant for ranks.
 
 Rebuilt, only two things can move R@1 here: (a) the injected q·a term, and
-(b) HETEROGENEITY of v_i·a_i across gallery items — items whose vision and
-audio agree shrink less and float up past items where they disagree. One gap,
-12.61 → 5.86, to split two ways. The pending control (set q·a = 0, RETAIN the
-per-item √(2+2·v_i·a_i)) isolates (b) exactly: if heterogeneity is negligible
-it returns ≈12.61, and whatever falls below 12.61 is the (b) term with the
-remainder to 5.86 being (a). A return near 12.61 is the cleanest version of
-this story — averaging a dead channel is pure injected noise, no normalization
-narrative required. Cheap design: score gold plus a fixed random 10k-item
-gallery subset under all three conditions (vision-only, fused, q·a=0) on the
-identical subset; absolute R@1 shifts but the three-way split is preserved at
-~9× less compute than the full 53,580 × 87,697 pass. This should land before
-venue selection; until it does, the split is UNMEASURED and the entry does not
-claim a derived mechanism.
+(b) HETEROGENEITY of v_i·a_i across gallery items. **The control is now RUN**
+(same 53,580 queries × 87,697 clips; it took 8 CPU-minutes, not the GPU pass we
+budgeted for):
 
-**The two pending runs, with owners — they are INDEPENDENT.** (i) The q·a=0
-control above, isolating gallery-side (b): owned by the FLARE/audiovisual line
-(note 05), which has the v/a galleries resident for its w-sweep; needs a GPU.
-(ii) The 2–3 parameter per-group weight, testing query-side structure: owned by
-the line that ran the oracle, minutes on cached artifacts, no GPU. Neither
-constrains the other — (b) is heterogeneity across GALLERY items, the per-group
-weight is structure across QUERIES. A null on the control does NOT pre-discount
-the per-group result: if (b) is exactly zero and the whole collapse is injected
-q·a, then audio is noise for vision-targeted queries and signal for
-audio-targeted ones, the optimal w still differs sharply by group, and the full
-+5.64 remains on the table. If anything a negligible (b) makes the per-group
-run MORE decisive, since it would be the only structure left.
+| condition | score | R@1 |
+|---|---|---|
+| vision only | q·v | 12.61 |
+| dead audio, compression kept | q·v / ‖v+a‖ | **10.65** |
+| incumbent | (q·v + q·a) / ‖v+a‖ | 5.86 |
+| audio added, no compression | (q·v + q·a) / 2 | 5.00 |
 
-**Two corrections we carry rather than bury.** Our earlier "12.81 at w=0.95,
-found independently twice" was a SHARED BLIND SPOT: two sweeps agreed because
-neither grid contained 0.93, so the agreement was one measurement run twice,
-not a cross-check. Treat identical numbers from a shared pipeline as a
-reproduction until the inputs are shown disjoint. And the WAVE-7B contrast is
+Harness check: the formula reproduces the arm's own measured incumbent to +0.00
+against its encoded gallery, so this describes the real operator rather than an
+algebraic lookalike.
+
+**Injected noise is the major term and compression is the minor one.** Of the
+6.75-point collapse, the normalizer costs 1.96 (29%) and adding q·a costs 4.79
+(71%). Our retracted algebra had predicted 7.98 for the dead-audio row; the
+measured value is 10.65, so that residual was not merely unmeasured, it pointed
+the wrong way.
+
+And the split is NON-ADDITIVE, with an order-dependent sign. Read the other
+way round: adding audio to an UN-normalized score costs 7.61 (12.61 → 5.00),
+and then switching to the per-document normalizer GIVES BACK 0.86 (5.00 →
+5.86). On an already audio-polluted score, the varying denominator HELPS. So
+the "documents are penalised for disagreeing with themselves" story is a small
+effect whose sign depends on the order you apply it in, and it is not the
+account of this collapse. What survives is blunter and is what the paper should
+say: **the operator's failure is that it adds a noise channel at equal weight.**
+That is why a scalar repairs it, and why the repair is a WEIGHT rather than a
+better normalizer. Measured cos(v,a) = 0.247 ± 0.120.
+
+**One run still open.** The 2–3 parameter per-group weight, testing query-side
+structure: owned by the line that ran the oracle, minutes on cached artifacts,
+no GPU. It is INDEPENDENT of the control just reported — (b) is heterogeneity
+across GALLERY items, the per-group weight is structure across QUERIES, and
+neither constrains the other. The measured (b)=1.96 does not bound it: audio is
+noise for vision-targeted queries and signal for audio-targeted ones, so the
+optimal w still differs sharply by group and the full +5.64 remains on the
+table. This run gates how strongly the "probe-unrecoverable" line can be
+stated, and should land before venue selection.
+
+**Corrections we carry rather than bury.** Our "12.81 at w=0.95, found
+independently twice" was a SHARED BLIND SPOT: two sweeps agreed because neither
+grid contained 0.93, so the agreement was one measurement run twice, not a
+cross-check. Treat identical numbers from a shared pipeline as a reproduction
+until the inputs are shown disjoint. The FIX for that was then wrong in the
+same family: "12.86 at w=0.93" quoted an argmax whose lead over 0.95 is
++0.049, CI [−0.028, +0.123], i.e. indistinguishable from zero. A denser grid
+buys resolution, not significance; the honest object is the plateau, and the
+test that separates them is a paired bootstrap, which is what promoted audio's
++0.25 (CI [+0.11, +0.39]) from claim to result. And the WAVE-7B contrast is
 NOT running: all three arms wrote a complete text.pt but produced zero gallery
 results. Counted per arm (2026-08-13), the failures are NOT one cause —
 maudio 1596 errors all dtype/0 OOM, munified 399 all dtype/0 OOM, mvision 399
