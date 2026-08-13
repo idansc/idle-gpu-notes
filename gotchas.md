@@ -538,6 +538,34 @@ we are least inclined to re-test. Before you believe a negative, confirm the
 feature *announced itself* — a banner, a log line, a status call — not merely
 that the process started and the flag was accepted.
 
+**The same shape cost us a GPU-week, and here it is measurable.** A model was
+configured with `attn_implementation="sdpa"` and OOM'd on a single 47 GiB
+allocation. The first diagnosis was that passing an attention mask drops SDPA
+onto the math backend; the real precondition is narrower and stricter. Qwen's
+vision and audio attention pass **3-D** tensors `(heads, seq, dim)`, and every
+fused SDPA kernel requires 4-D — so they silently refuse, and *every* backend
+falls back to MATH regardless of the mask. "sdpa is set" was never "sdpa is
+used", for the whole run.
+
+Forcing torch's backends against each other on the same inputs shows they are
+selectable in principle and identical in practice at these shapes:
+
+```
+MATH vs EFFICIENT vs FLASH vs CUDNN:  max|Δ| = 9.766e-04 for every pair
+                                      = 2^-10 exactly, one bf16 ULP
+```
+
+Two consequences. The memory fix that worked (block-diagonal attention over
+`cu_seqlens` segments with `attn_mask=None`, 47 GiB → 19 GiB) worked by shrinking
+per-call `n` inside the math backend, **not** by enabling a fused kernel — which
+is why the result is 19 GB rather than something far smaller, and reshaping to
+4-D is still on the table as a separate win. And a naive version of this
+backend-comparison test reports "no available kernel" and yields nothing, which
+reads like the test failing rather than like the finding it is.
+
+Check which backend actually ran before attributing anything — memory,
+throughput, or numerics — to the one you asked for.
+
 ## Two implementations agreeing is not two findings
 
 We reported a tuned fusion weight as confirmed, because two lines found the same
