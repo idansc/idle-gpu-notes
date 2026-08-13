@@ -170,8 +170,11 @@ train folds and scored held out). We do not quote a single argmax: paired
 bootstrap on w=0.93 vs w=0.95 gives +0.049, CI [−0.028, +0.123], which includes
 zero — our own earlier "12.81 → 12.86 at w=0.93" correction was false precision
 of exactly the kind it was correcting. What survives the same test is audio's
-marginal contribution, +0.25 with paired CI [+0.11, +0.39] excluding zero — not
-the 6.75-point hole the collapse appears to leave.
+marginal contribution over vision alone — but quote it at a PRE-SPECIFIED
+weight, not at the argmax, because the argmax's advantage inherits its own
+selection: w = 0.95 gives **+0.205, paired CI [+0.088, +0.321]**, excluding
+zero, with every plateau point in +0.19 to +0.25. Significant but tiny — and
+not the 6.75-point hole the collapse appears to leave.
 
 Then the ceiling. A per-query oracle that picks the best weight for each query
 separately reaches 18.50, a genuine +5.64 over the best constant, computed
@@ -271,7 +274,11 @@ same family: "12.86 at w=0.93" quoted an argmax whose lead over 0.95 is
 +0.049, CI [−0.028, +0.123], i.e. indistinguishable from zero. A denser grid
 buys resolution, not significance; the honest object is the plateau, and the
 test that separates them is a paired bootstrap, which is what promoted audio's
-+0.25 (CI [+0.11, +0.39]) from claim to result.
+marginal contribution from claim to result. That fix needed a third pass of its
+own: quoting the argmax's +0.25 [+0.11, +0.39] still inherits the selection that
+produced 0.93, so the reported figure is the pre-specified w = 0.95, +0.205
+[+0.088, +0.321]. Selection bias does not disappear because the estimate it
+contaminates is now a difference.
 
 **WAVE-7B status, and a log that outran three readings of it.** The contrast is
 RUNNING as of 2026-08-13 12:48 — four sharded gallery workers, results
