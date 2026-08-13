@@ -368,6 +368,43 @@ What is new here is the explanation (an equal-weight noise channel), the repair
 (one scalar), and the bound on repairing it further (oracle 18.50, probe 12.49,
 eight groupings ≤ +0.01) — not the observation.
 
+## Pre-registered: the WAVE contrast
+
+Written before the galleries merged, so the result is a test rather than a
+description. Recorded here even if it goes against me.
+
+**The experiment.** WAVE emits one joint vector per media mode, so there is no
+incumbent operator to repair and no `w` to sweep — the ImageBind question does
+not transfer. What the three arms give instead is WAVE's *own* vision-only and
+audio-only embeddings, so: late-fuse those two with a tuned scalar and compare
+against WAVE's native joint output.
+
+| | R@1 |
+|---|---|
+| WAVE vision-only | 16.80 (published) |
+| WAVE audio-only | 7.58 (published) |
+| WAVE late-fused, tuned `w` | **?** |
+| WAVE native joint | 42.63 (published) |
+
+**Prediction, with a number: tuned late fusion lands below 29.7**, i.e. it
+recovers less than half the 16.80 → 42.63 gap. If it comes in above that, the
+prediction is wrong and the write-up says so rather than accommodating it.
+
+Why it matters either way. Falling well short is evidence that joint encoding
+does something score-level combination provably cannot — a stronger operator
+claim than anything else in this note, and it lands against published anchors on
+both ends rather than against our own numbers. Reaching 42.63 would instead mean
+late fusion is fine whenever both channels are alive, and the entire ImageBind
+story reduces to one dead channel plus one bad weight.
+
+**Harness gate, with its tolerance fixed in advance.** The audio arm finishes
+first and must reproduce the published 7.58 before anything downstream is
+trusted. Our two ImageBind deviations are **both negative** (fused −7.7%,
+vision-only −2.0%), which reads as a small systematic offset rather than noise —
+most likely preprocessing (frame budget, clip sampling, resolution). So the gate
+is **7.0–7.6**, not 7.58 exactly. Deciding that now means a −4% result is a pass
+rather than an argument.
+
 ## Which models collapse, and why: a published 2×2
 
 The same table answers a question the note had been treating as open. Table 4,
