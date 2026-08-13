@@ -42,8 +42,13 @@ Sweeping a fixed weight on the cached galleries (no GPU, no re-encoding),
 |---|---|---|---|---|---|---|---|
 | R@1 | 0.25 | 5.00 | 11.60 | 12.80 | **12.86** | 12.81 | 12.61 |
 
-**One scalar recovers the whole collapse: 5.86 → 13.12, +7.26 points, without
-leaving the operator the benchmark already uses.** Audio's genuine contribution
+**One scalar recovers the whole collapse: 5.86 → ~13.1, +7.2 points, without
+leaving the operator the benchmark already uses.** (Plateau, w ≈ 0.87–0.90 — not
+a two-decimal argmax. The same curve gave 13.09 at w=0.90 on a coarse grid and
+13.12 at w=0.87 on a fine one, and the nested per-fold picks span 0.87–0.89. That
+0.03 sits inside noise this benchmark cannot resolve at n = 53,580 — the third
+time today the same trap has been laid. The number carrying the claim is the
+nested margin, which is selection-free.) Audio's genuine contribution
 is **+0.474 R@1 over vision alone**, nested 95% CI [+0.271, +0.664].
 
 > ⚠️ **Family correction — read before quoting any number below.** The incumbent
@@ -53,11 +58,11 @@ is **+0.474 R@1 over vision alone**, nested 95% CI [+0.271, +0.664].
 >
 > | | linear (what I swept) | renormalized (the real family) |
 > |---|---|---|
-> | best fixed w | 0.93 | **0.87** |
-> | bar | 12.86 | **13.12** |
+> | best fixed w | 0.93 | **≈0.87–0.90** |
+> | bar | 12.86 | **≈13.1** |
 > | audio margin over vision-only | +0.254 [+0.063, +0.386] | **+0.474 [+0.271, +0.664]** |
 >
-> The bar is **13.12**, not the ~12.8 plateau I circulated. Audio's margin
+> The bar is **≈13.1**, not the ~12.8 plateau I circulated. Audio's margin
 > roughly **doubles** and moves clearly away from zero, so "significant but
 > tiny" is too weak — half a point is small, not negligible. Sections below that
 > still quote linear-family numbers are marked.
@@ -215,6 +220,7 @@ Dirichlet sampler, not the ceiling.
 | **per-query ORACLE w, continuous** *(linear family)* | **18.50** |
 | per-query oracle restricted to the 11-point grid *(linear)* | 17.69 |
 | per-query oracle on the renormalized family, 23-point grid | 17.76 |
+| decoy null, renormalized family, same grid | 0.01 |
 | decoy null (same math, random non-gold target) | **0.01** |
 
 ⚠️ **Family note:** the oracle, probe and grouping results in this section were
@@ -629,3 +635,35 @@ load-bearing dead-channel zero held: min-rescued 3,178 vs min-vulnerable
 14,799 — net −11,621, and on the flanked subset z-min reaches top-10 for 6.0%
 vs max's 19.2%. The conjunctiveness question is UNTESTABLE on this substrate
 and moves with the operator work.
+
+
+## Controls re-derived on the renormalized family
+
+Recomputed after the family error, so ceiling, null and grouping arms all come
+from the operator the benchmark actually uses. The headroom moved from +4.83 to
+**+4.64** — both ends shifted.
+
+| | R@1 |
+|---|---|
+| best fixed `w` ≈ 0.87–0.90 | 13.12 |
+| per-query oracle **within grid** | 17.76 |
+| **decoy null, same grid, same family** | **0.01** |
+| lexical audio proxy, 2 groups | 13.11 (−0.01) |
+| `max q·v`, 5 bins | 13.10 (−0.01) |
+| `max q·a`, 5 bins | 13.06 (−0.06) |
+| audio affinity, 2 / 5 bins | 13.09 / 13.10 (−0.03 / −0.02) |
+
+**Which family wins is now measured, not asserted:** renormalized 13.12 against
+linear 12.86, paired **+0.256, 95% CI [+0.121, +0.396]**, excluding zero.
+
+Why the oracle here is a *grid* quantity and never an "exact" one: the exact
+per-query solver used on the linear family required the score to be affine in
+`w`, so each distractor gave a half-line and the feasible set was a single
+interval. Renormalized, the denominator is per-document and does not cancel in
+`s_g > s_d` — the feasible set need not be an interval or even connected.
+Reusing that solver would return a confident wrong ceiling shaped exactly like a
+right one, which is the retracted MultiVENT "+1.69 hard ceiling" failure again:
+a quantity that measured the sampler rather than the bound.
+
+Five groupings, none beating a single global weight, against a null-controlled
++4.64 of available headroom. The conclusion survives the family correction.
