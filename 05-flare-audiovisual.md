@@ -57,9 +57,19 @@ is markedly more fragile:
 | w = 0.93 (argmax) | +0.254 | [+0.112, +0.398] |
 | w = 0.95 | +0.205 | [+0.088, +0.321] |
 
-Every point on the plateau beats vision-only with a CI excluding zero, but the
-weakest floor is **+0.017** — above zero and barely. Anyone quoting the argmax's
-interval is overstating what this benchmark supports.
+Every point on the plateau beats vision-only with a CI excluding zero.
+
+**Headline the pre-specified point, not the argmax: w = 0.95, +0.205,
+[+0.088, +0.321].** That value was fixed by two earlier grids before this
+question was posed, so it does not inherit the selection that 0.93 does. The
+plateau range is the robustness check, and its weakest floor is **+0.017** —
+above zero and barely.
+
+One caveat, because "carries no selection at all" would be too strong: 0.95 was
+itself the argmax of a coarser grid over these same 53,580 queries. It is
+selection at lower resolution, not the absence of selection. What makes it the
+better instrument is that it was chosen before anyone asked what audio was worth,
+not that it was chosen blind.
 
 Replicated independently: a 5-fold **held-out** fit by a second line gives
 α\* = 0.95 and held-out R@1 12.81 — same optimum, same value, so the sweep had
