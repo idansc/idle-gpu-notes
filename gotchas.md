@@ -700,3 +700,53 @@ baseline is optimistically biased even when the tuning was fold-wise. When the
 curve is a plateau, report the plateau's MINIMUM advantage — here "every w in
 [0.90, 0.95] beats the baseline by +0.19 to +0.25" — which costs nothing, is
 selection-free, and still excludes zero.
+
+## Per-item resume turns a settings change into a two-protocol gallery
+
+A run was encoding video at 32 frames. The frame budget was wrong — the upstream
+default is 64, and the 32 was a workaround for an OOM that turned out to be an
+attention-kernel bug, not a capacity limit. Two videos per arm had already been
+encoded when the setting was corrected.
+
+The pipeline resumes by skipping items whose output already exists. That is the
+right design for surviving node flaps and it is exactly what makes this
+invisible: the finished gallery would have contained two videos at 32 frames and
+397 at 64, with nothing in the output recording the seam and no error anywhere.
+Every downstream metric would have been computed over a mixture of protocols.
+
+**A settings change invalidates the cache.** Delete the affected outputs, or
+version the output directory by config. Per-item resume is what removes your one
+chance to notice, because the run that mixes protocols looks exactly like the run
+that resumed cleanly.
+
+Two habits that contain it:
+
+- Never write a settings probe into the real output directory. Verify the new
+  configuration under its own `RUN_NAME`, then move that directory out of the
+  tree entirely so no later glob can score it.
+- Stamp the settings into each record (see *A job that invokes a script once per
+  arm*). A mixed gallery is then detectable after the fact instead of permanent.
+
+## A number you derived becomes a number you believe
+
+An operator reported a run as `67/738` and planned an eight-hour wait around it.
+The gallery held **399** videos: `dataset_summary.json` said
+`total_videos: 399`, and the four workers logged `Processing 100 videos in chunk
+0/4` — 100+100+100+99. The `738` had been back-derived as 2 × 369 from a chunk
+count in an earlier smoke test, for a different purpose, and then carried
+forward as though it had been measured.
+
+Nothing about it looked like a guess by the time it was being used. That is the
+whole hazard: a figure computed once for one purpose acquires the authority of an
+observation, and the arithmetic that produced it is not attached to it.
+
+The damage here would not have been the wrong ETA. A run that stops at 399
+against an expectation of 738 reads as a **silent early exit** — the same shape
+as the empty gallery two entries up, and it would have been "fixed" by
+relaunching a job that had already finished.
+
+Before a number governs a decision, say where it came from out loud. "Measured
+from `dataset_summary.json`" and "derived from a chunk count in a different run"
+should never be indistinguishable, and progress counters are a common source of
+the confusion: the `n/n` inside a per-worker progress bar was counting *clips
+within the current video*, not videos.
