@@ -1,5 +1,47 @@
 # 04 — MultiVENT 2.0 / CLaMR: finding a benchmark with genuinely multimodal items
 
+> ## ⚠️ UNDER VERIFICATION — the channel count is disputed
+>
+> **Every number in this note may be computed over 4 of 5 slices.** Not yet
+> resolved; my cluster access is down. Recorded now because these numbers are the
+> comparison target for work in other lanes.
+>
+> The dumped tensor is `[1504, 1504, 5]`, and our sweep carries an explicit,
+> load-bearing assumption at `reduce_sweep.py:32`:
+>
+> ```python
+> # channel 0 is padding (M = max(modality_id)+1, ids are 1..4); drop it.
+> sims = sims[..., 1:]
+> ```
+>
+> **Two lines have reported incompatible readings of `mod_ids`**, and I have
+> verified neither:
+> - one reports distinct values `[-100, 0, 1, 2, 3, 4]` — `-100` is the ignore
+>   index and `0` is a real modality holding 47.3% of document tokens, so our
+>   sweep dropped the largest channel;
+> - the other reports four content ids plus padding, which is what the code
+>   assumes, and adds that the slice indexing and the id indexing may not
+>   correspond at all.
+>
+> Both cannot be right. One correction to how this reached me: the at-risk slice
+> is index **0**, the one the code drops — not the "slice 4" whose strength
+> prompted the question. Slice 4 was inside our four all along.
+>
+> **Resolution is one check**: is `sims[..., 0]` finite and non-degenerate, and
+> does slice *k* contain the tokens whose `mod_id` is *k*? If slice 0 is padding
+> the note stands unchanged; if it is real, every number here is recomputed
+> before anything is built on it.
+>
+> **Tie convention, which I can attest to**, since it is the other free parameter
+> being raised: this ladder does not use torchmetrics. `reduce_sweep.py` ranks
+> with `torch.argsort(..., descending=True, stable=True)` and locates the gold by
+> its position in that order, so ties resolve by **index order** — neither
+> gold-first nor gold-last. That choice was deliberate and is documented in the
+> file: the optimistic `(score > gold).sum()` convention counts ties as
+> not-ahead and inflated max to **85.63** against the true **57.63**. Any arm
+> compared against 57.43 must use the same function, not a different convention.
+
+
 **Status: reproduced at 57.63 (published 58.47), then abandoned. Every operator
 avenue here is bounded below +2 points, and we can now show that cheaply.**
 

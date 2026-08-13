@@ -157,7 +157,34 @@ anchor to test, not as a measured trend.
 
 ## Pending — expected to reach this bar
 
-### FLARE: audio-visual fusion collapses are a missing hyperparameter — and the per-query fix is unlearnable
+### FLARE: audio-visual fusion collapses are a missing hyperparameter — and whether the per-query fix is learnable depends on the operator family
+
+> ⚠️ **REVERSED, and the reversal is the result.** This entry previously claimed
+> the per-query fix is unlearnable. That was measured on the LINEAR family
+> `w·(q·v) + (1−w)·(q·a)`; FLARE's incumbent is `q · normalize(w·v + (1−w)·a)`.
+> The two agree only at w=0 and w=1, so every endpoint calibration passed while
+> the middle of the curve was a different operator.
+>
+> | | linear family | renormalized (the real one) |
+> |---|---|---|
+> | learned `w(q)` − constant | **−0.349** [−0.485, −0.211] | **+0.159** (5 partitions, sd 0.015) |
+>
+> Same code, same folds, same top-1 surrogate, same initialize-at-the-constant
+> free pass. Only the operator changed and the sign flipped. Verified across five
+> video-disjoint fold partitions, all positive, every CI excluding zero, and it
+> beats the best *fixed* grid point by +0.110–0.131 as well as the held-out
+> constant.
+>
+> **Lead with the flip, not the +0.159.** Whether a learned operator beats a
+> fixed one is settled here by a modelling choice almost no paper reports. Two
+> honest groups could run identical code on identical data and publish opposite
+> conclusions. The effect itself is small — 3.4% of a +4.68 oracle gap — while
+> five hand-specified groupings recover ~0%, so the structure is real, per-query,
+> and not capturable by any partition we can specify by hand.
+>
+> Other corrections from the same error: the bar is **≈13.1** (plateau
+> w ≈ 0.87–0.90), not the ~12.8 circulated, and audio is worth **+0.474**
+> [+0.271, +0.664] over vision alone, not +0.254.
 
 > ⚠️ **FAMILY ERROR, CORRECTED — two items still open.** Numbers with a `w`
 > attached were originally computed on the LINEAR family
