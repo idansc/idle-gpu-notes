@@ -89,9 +89,9 @@ that is now measured, below.
 Before asking what could repair the collapse, measure what causes it. Two
 mechanisms are bundled in `normalize((v+a)/2)`, and only one had been estimated:
 
-- **Compression** — the score is `(q·v + q·a) / |v+a|` with
-  `|v+a| = √(2 + 2·v·a)`, a *per-document* denominator. Measured
-  `cos(v,a) = 0.247 ± 0.120`, so `|v+a|` ranges 1.31–1.79.
+- **Compression** — the score is `(q·v + q·a) / ‖v+a‖` with
+  `‖v+a‖ = √(2 + 2·v·a)`, a *per-document* denominator. Measured
+  `cos(v,a) = 0.247 ± 0.120`, so `‖v+a‖` ranges 1.31–1.79.
 - **Reordering** — `q·a` enters the numerator, and audio-text is near-noise here
   (audio-only R@1 = 0.25).
 
@@ -101,8 +101,8 @@ audio-induced *normalizer*: `(q·v) / √(2 + 2·v·a)`.
 | arm | R@1 |
 |---|---|
 | vision only, `q·v` | 12.61 |
-| **dead audio, compression kept**, `q·v / |v+a|` | **10.65** |
-| incumbent, `(q·v + q·a) / |v+a|` | 5.86 |
+| **dead audio, compression kept**, `q·v / ‖v+a‖` | **10.65** |
+| incumbent, `(q·v + q·a) / ‖v+a‖` | 5.86 |
 | audio added, no compression, `(q·v + q·a)/2` | 5.00 |
 
 Harness check: the formula reproduces the measured incumbent to **+0.00** against
