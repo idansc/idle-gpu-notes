@@ -975,6 +975,26 @@ examples that go in a paper all live at the item level, where 10% churn is the
 operative number rather than 0.1 points. Source them from the same run they are
 argued about, never from a re-run.
 
+**The floor is a rank-1 phenomenon — do not carry it to deeper cutoffs.**
+Measuring the same perturbation at each cutoff, 20,000 queries per arm:
+
+```
+           ΔR@1     ΔR@5     ΔR@10
+  vision   -0.095   -0.040   +0.055
+  audio    -0.105   +0.040   +0.050
+```
+
+It shrinks with K and is sign-unstable by R@10, because falling out of a top-10
+set takes far more than falling out of rank 1. Two consequences. The cost is
+**level-independent** — 0.095 on a 16.7-point row against 0.105 on a 7.4-point
+row — so equal absolute gaps across rows of very different strength are the
+numeric signature rather than a coincidence; the larger gold-near-top population
+on the stronger row is offset by its larger margins. And "within the numeric
+floor" is a claim available only at R@1. In the case that produced this table,
+R@1 sat about two floor-units low and looked explainable, while R@5 and R@10 sat
+10-20x the floor — so a deficit that reads as reproducible at rank 1 was a real
+systematic gap at depth. Check every cutoff before writing "reproduces".
+
 ⚠️ One trap in doing this: a bf16 matmul establishes the transfer function
 (ε → ΔR@1), not the size of the perturbation you are attributing to. Reading
 "numeric noise explains my gap" off it requires knowing your actual ε, and
