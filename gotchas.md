@@ -470,3 +470,52 @@ feature that works and disproves your hypothesis, and a null result is the thing
 we are least inclined to re-test. Before you believe a negative, confirm the
 feature *announced itself* — a banner, a log line, a status call — not merely
 that the process started and the flag was accepted.
+
+## Two implementations agreeing is not two findings
+
+We reported a tuned fusion weight as confirmed, because two lines found the same
+optimum: w\*=0.95 worth 12.81, from a held-out α sweep and from an independent
+scalar sweep, "matching to the decimal". It went into a publication entry as a
+double-find.
+
+Neither grid contained 0.93. A 101-point grid, tuned on train folds and scored
+held out, picks **0.93 in all five folds**:
+
+```
+0.90:12.80   0.93:12.86   0.95:12.81   0.97:12.73   1.00:12.61
+```
+
+Both sweeps were forced to report the same wrong answer, and their agreement
+measured the shared grid rather than the data. This is a distinct failure from
+two analyses sharing cached scores: the code can be genuinely separate, the
+splits genuinely different, and the agreement still manufactured — by any
+constraint both inherited. Search space, tolerance, candidate list, tokenizer,
+seed set.
+
+Before citing agreement as evidence, ask what the two runs shared. If the answer
+includes the set the answer had to come from, you have one measurement.
+
+The correction also shows the other side. The plateau here spans 0.06 from 0.90
+to 0.95, which is *larger* than the 0.05 error being corrected — so the right
+report is an interval over the plateau, not a second decimal. A number too
+precise to be stable invites exactly the re-derivation that produced this entry.
+
+## A surrogate that disagrees with the reported metric hands the flexible arm a win
+
+Testing whether a per-query weight beats a global one, the conditional arm won by
++0.41. It was an artifact of the training objective. Listwise cross-entropy put
+its optimum at w=0.84 — worth 12.24 under the top-1 metric actually being
+reported — while the true top-1 optimum was 0.93 at 12.86. The constant-weight
+control was therefore fitted to the wrong target and ran handicapped, and the
+flexible arm's extra capacity let it partially escape the same mis-specification.
+The measured "gain" was the control's handicap.
+
+Any capacity comparison needs both arms optimized for the metric in the table.
+When they cannot be (non-differentiable objectives usually), certify the harness
+first: check the SIMPLE arm recovers its known optimum. Here the constant arm
+reaching 12.84 against a grid optimum of 12.86 is what licenses believing
+anything about the conditional arm — without that check, every number downstream
+is measuring the surrogate.
+
+The general shape: extra capacity buys escape from a badly specified objective,
+and that escape is indistinguishable from the effect you are trying to measure.
